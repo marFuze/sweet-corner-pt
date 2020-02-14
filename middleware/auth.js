@@ -7,15 +7,19 @@ module.exports = async (req, res, next) => {
 
   try {
     // Get token from request headers, header name should be "access-token"
-    const accessToken = req.headers['access-token'];
+    const cartToken = req.headers['cart-token'];
 
     // Throw error if no access-token
-    if (!accessToken) throw Error('no token found');
+    if (!cartToken) throw Error('no token found');
 
     // Use jwt to decode the token
-    const decodedToken = jwt.decode(accessToken, jwtSecret, 'HS512');
+    const decodedToken = jwt.decode(cartToken, jwtSecret, 'HS512');
 
-    const { userId } = decodedToken
+    const { cartId } = decodedToken
+
+    res.send({
+      cartId
+    })
 
     // Query the DB to get the users name and email, and to ensure the userId is valid
 

@@ -5,9 +5,9 @@ const jwt = require('jwt-simple');
 const { jwtSecret } = require('../../config/jwt');
 const auth = require('../../middleware/auth');
 
-router.post('/items/:product_id', async (req, res, next) => {
+router.post('/items/:product_id', auth, async (req, res, next) => {
 
-    let { cart } = req;
+   const cart = req.headers['cart-token'];
 
     try {
         if (!cart){
@@ -19,7 +19,6 @@ router.post('/items/:product_id', async (req, res, next) => {
             const {rows} = resp
             
             const [{id}] = rows
-            console.log(id)
 
             cartId = id;
 
@@ -34,6 +33,10 @@ router.post('/items/:product_id', async (req, res, next) => {
                 {
                    "cart-token": token 
                 })
+        }
+        {
+           console.log ('cart id was found')
+            res.send({ message:'cart id was found'})
         }
     }
     catch(err) {
