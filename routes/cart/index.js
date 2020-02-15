@@ -8,55 +8,72 @@ const auth = require('../../middleware/auth');
 router.post('/items/:product_id', auth, async (req, res, next) => {
     const {quantity} = req.body;
     const {product_id} = req.params;
-   
-    
     const cartTokenHeader = req.headers['cart-token'];
 
     try {
         
-        const productsql = `select "id" from "products" where "pid"=$1;`
-
-        const productIDExists = await db.query(productsql,[product_id])
-    
-
-        if (!productIDExists) {
+        const sql = `select "id" from "products" where "pid"=$1;`
+        const productIDExists = await db.query(sql,[product_id])
+        const {rows} = productIDExists; 
+        const [{id}] = rows;
+        const validProductId = id;
+        
+        //confirm valid product id
+        if (!validProductId) {
             res.status(404).send('Invalid Product Id');
             return;
+        } else {
+            console.log('product id is valid')
         }
 
         if (!cartTokenHeader){
 
-//             If the "Authorization" header is sent, the item will be added to the users currently active cart. If the user does not have an active cart, a new cart will be created and become the active cart.
-// If the "X-Cart-Token" header is sent, the item will be added to the cart that belongs to that token.
-// If no headers are sent a new cart will be created and the cart token will be sent in the response. All subsequent requests should use the provided cart token if not logged in, this will ensure that all user items will be added to the same cart.
-// If the item already exists in the currently active cart, the quantity of that item will be adjusted based on the quantity sent. Quantity defaults to 1 if not sent.
-// If both the auth and cart headers are sent, the auth header will take precedence. Once the user signs in or registers, the cart will be transferred to the user so the cart token is no longer needed and becomes invalid.
-
-            const sql = `insert into "carts" ("pid","statusId")
-            values (uuid_generate_v4(),2) RETURNING ID`
-            const resp = await db.query(sql);
-           
-            const {rows} = resp
             
+            const activeCartStatus = 2;  //2 is active status cart in cartstatuses table
+            const sql = `insert into "carts" ("pid","statusId") values (uuid_generate_v4(),$1) RETURNING id;`
+            const newCart = await db.query(sql,[activeCartStatus]);
+            const {rows} = newCart      
             const [{id}] = rows
-
-            cartId = id;
+            newCartId = id;
 
             const cartTokenProps = {
-                cartId: cartId,
+                cartId: newCartId,
                 ts: Date()
             }
 
             const token = jwt.encode(cartTokenProps, jwtSecret)
 
+            res.send(
+                {
+                   "message": "here is the cart token",
+                    "cart-token": token,
+                   "quantity": quantity
+                   
+                })
+        }  
+
+        if(cartTokenHeader){
+
+            guestCartId = res.locals.activeCartId;
+
+            const sql1 = `select "id" from "carts" where "id"=$1;`
+            const existingCart = await db.query(sql1,[guestCartId]);
+            //console.log('existing cart', existingCart.rows)
+            const {rows} = existingCart
+            const [{id}] = rows;
+            existingCartId = id;
+
+            const sql2 = `insert into "cartItems" ("productId","quantity") values ($1,$2) RETURNING *;`
+            const addProductToCart = await db.query(sql2,[validProductId,quantity]);
 
 
             res.send(
                 {
-                   "cart-token": token,
+                   "message": "product added to cart" + addProductToCart,
+            
                    
                 })
-        }  
+        }
             // const sql = `select "id" from "cartItems" where "id"=$1 and "productId"=$2;`
             // const cartItemExists = await db.query(sql,[cartId,product_id]);
             

@@ -10,39 +10,17 @@ module.exports = async (req, res, next) => {
     const cartToken = req.headers['cart-token'];
 
     // Throw error if no access-token
-    if (!cartToken) throw Error('no token found');
+   // if (!cartToken) throw Error('no token found');
 
     // Use jwt to decode the token
+
+    if (cartToken){
     const decodedToken = jwt.decode(cartToken, jwtSecret, 'HS512');
+    
+    const {cartId} = decodedToken;
 
-    const { cartId } = decodedToken
-
-    // res.send({
-    //   cartId
-    // })
-
-    // Query the DB to get the users name and email, and to ensure the userId is valid
-
-    // const {
-    //   rows: userData = []
-    // } = await db.query(`
-    // SELECT "name", "email" FROM "users"
-    // WHERE "userId" = $1`,
-    //   [userId]);
-
-    // const [{
-    //   name,
-    //   email
-    // }] = userData
-
-    // Throw error if no user
-    //if (!name) throw new ApiError(422, 'Missing user\'s name');
-
-    // Add the user to req.user
-
-    //req.user = name
-
-    req.decodedCartId = cartId
+    res.locals.activeCartId = cartId;
+  }
 
     // Go to the next thing...
     next();
