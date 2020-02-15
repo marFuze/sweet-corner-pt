@@ -67,11 +67,12 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
 
             const sql3 = `select "id" from "cartItems" where "productId"=$1`
             const existingProductCartItem = await db.query(sql3,[validProductId])
-            //console.log("TCL: existingProductCartItem", existingProductCartItem)
+            const {rows: existingProduct} = existingProductCartItem
+            console.log("TCL: existingProduct", existingProduct.length)
        
         
 
-            if(!existingProductCartItem){
+            if(existingProduct === undefined || existingProduct.length == 0){
             //add product as cart item to cart's cartItems table
             const sql2 = `insert into "cartItems" ("productId","quantity") values ($1,$2) RETURNING *;`
             const addProductToCart = await db.query(sql2,[validProductId,quantity]);
@@ -79,7 +80,7 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             
             }
 
-            if(existingProductCartItem){
+            if(existingProduct.length > 0){
             const sql4 = `update "cartItems" set "quantity" = "quantity" + $1 where "productId"=$2 RETURNING *;`
             const updateProductCartItem = await db.query(sql4,[quantity,validProductId]);
             }
