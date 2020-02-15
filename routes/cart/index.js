@@ -87,7 +87,9 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
 
             res.send(
                 {
-                   "message": "product added to cart"  
+                   "message": "product added to cart",
+                   "cart-token": cartTokenHeader,
+                   "added quantity": quantity  
                 })
         }
     }
