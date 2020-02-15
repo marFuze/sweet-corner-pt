@@ -53,9 +53,9 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
         }  
 
         if(cartTokenHeader){
-
+            //cart id from token
             guestCartId = res.locals.activeCartId;
-
+            //check cart id against cart table
             const sql1 = `select "id" from "carts" where "id"=$1;`
             const existingCart = await db.query(sql1,[guestCartId]);
             //console.log('existing cart', existingCart.rows)
@@ -63,22 +63,32 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             const [{id}] = rows;
             existingCartId = id;
 
+            //check if product exists in any cart items
+
+            const sql3 = `select "id" from "cartItems" where "productId"=$1`
+            const existingProductCartItem = await db.query(sql3,[validProductId])
+            //console.log("TCL: existingProductCartItem", existingProductCartItem)
+       
+        
+
+            if(!existingProductCartItem){
+            //add product as cart item to cart's cartItems table
             const sql2 = `insert into "cartItems" ("productId","quantity") values ($1,$2) RETURNING *;`
             const addProductToCart = await db.query(sql2,[validProductId,quantity]);
+            console.log(addProductToCart.rows)
+            
+            }
 
+            if(existingProductCartItem){
+            const sql4 = `update "cartItems" set "quantity" = "quantity" + $1 where "productId"=$2 RETURNING *;`
+            const updateProductCartItem = await db.query(sql4,[quantity,validProductId]);
+            }
 
             res.send(
                 {
-                   "message": "product added to cart" + addProductToCart,
-            
-                   
+                   "message": "product added to cart"  
                 })
         }
-            // const sql = `select "id" from "cartItems" where "id"=$1 and "productId"=$2;`
-            // const cartItemExists = await db.query(sql,[cartId,product_id]);
-            
-            // res.send({ message:'cart id was found', cartItemExists})
-        
     }
     catch(err) {
       
