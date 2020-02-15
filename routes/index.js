@@ -1,7 +1,8 @@
 const express = require('express');
 
 function ApplyRoutes(app){
-
+    
+    app.use(express.urlencoded({extended: false}));
     //const apiRouter = express.Router()
     app.use('/api/cart', require('./cart'))
 

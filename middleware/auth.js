@@ -17,9 +17,9 @@ module.exports = async (req, res, next) => {
 
     const { cartId } = decodedToken
 
-    res.send({
-      cartId
-    })
+    // res.send({
+    //   cartId
+    // })
 
     // Query the DB to get the users name and email, and to ensure the userId is valid
 
@@ -41,6 +41,8 @@ module.exports = async (req, res, next) => {
     // Add the user to req.user
 
     //req.user = name
+
+    req.decodedCartId = cartId
 
     // Go to the next thing...
     next();
