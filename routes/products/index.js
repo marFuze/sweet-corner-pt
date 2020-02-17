@@ -31,32 +31,32 @@ router.get('/', async (req, res, next) => {
 
 });
 
-router.get('/full', async (req, res, next) => {
+// router.get('/full', async (req, res, next) => {
 
     
 
-    const sql = `select p."pid" as id, "caption", "cost", p."name", i."pid" as "tnId", "altText", "file", "type" from "products" as p left join "images" as i on p."id"=i."productId" where "type"='thumbnail';`
+//     const sql = `select p."pid" as id, "caption", "cost", p."name", i."pid" as "tnId", "altText", "file", "type" from "products" as p left join "images" as i on p."id"=i."productId" where "type"='thumbnail';`
 
-        const { rows: singleProduct } = await db.query(sql);
+//         const { rows: singleProduct } = await db.query(sql);
 
-        const formattedProductData = singleProduct.map( product => {
-            const  { tnId, altText, file, type, ...p} = product;
+//         const formattedProductData = singleProduct.map( product => {
+//             const  { tnId, altText, file, type, ...p} = product;
  
-            return {
-                ...p,
-                thumbnail: {
-                    id: tnId,
-                    altText: altText,
-                    file: file,
-                    type: type,
-                    url: `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
-                }
-            }
-         })
+//             return {
+//                 ...p,
+//                 thumbnail: {
+//                     id: tnId,
+//                     altText: altText,
+//                     file: file,
+//                     type: type,
+//                     url: `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
+//                 }
+//             }
+//          })
 
-        res.send(formattedProductData);
+//         res.send(formattedProductData);
 
-});
+// });
 
 router.get('/:product', async (req, res, next) => {
 
