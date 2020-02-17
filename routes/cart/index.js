@@ -11,12 +11,14 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
     const cartTokenHeader = req.headers['cart-token'];
 
     try {
+        console.log('productid',product_id)
         
-        const sql = `select "id" from "products" where "pid"=$1;`
+        const sql = `select "pid" from "products" where "pid"=$1;`
         const productIDExists = await db.query(sql,[product_id])
-        const {rows} = productIDExists; 
-        const [{id}] = rows;
-        const validProductId = id;
+        const {rows} = productIDExists;
+        console.log('rows',productIDExists) 
+        const [{pid}] = rows;
+        const validProductId = pid;
         
         //confirm valid product id
         if (!validProductId) {
@@ -65,7 +67,7 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
 
             //check if product exists in any cart items
 
-            const sql3 = `select "id" from "cartItems" where "productId"=$1`
+            const sql3 = `select "pid" from "cartItems" where "productId"=$1`
             const existingProductCartItem = await db.query(sql3,[validProductId])
             const {rows: existingProduct} = existingProductCartItem
             console.log("TCL: existingProduct", existingProduct.length)

@@ -1,0 +1,95 @@
+.contact-form-container {
+    color: #754b23;
+    font-family: sans-serif;
+
+a {
+    text-decoration: none;
+    color: #06b4af;
+}
+
+.contact-main {
+    width: 50%;
+    display: table-cell;
+    padding: 30px;
+}
+
+.upDots {
+    position: absolute;
+    left: 250px;
+}
+
+.contact-form {
+    width: 50%;
+    padding: 30px;
+    display: table-cell;
+    padding: 30px;
+
+.name {
+    background-color: #e86b35;
+    width: 400px;
+    height: 25px;
+}
+
+.email {
+    background-color: #f6b53e;
+    width: 400px;
+    height: 25px;
+}
+
+.phone {
+    background-color: #06b4af;
+    width: 400px;
+    height: 25px;
+}
+
+.subject {
+    background-color: #e86b35;
+    width: 400px;
+    height: 25px;
+}
+
+.message {
+    background-color: #f6b53e;
+    width: 400px;
+    height: 100px;
+}
+
+.send {
+    background-color: #06b4af;
+    color: white;
+}
+
+}
+}
+
+
+
+.schedule-table-container {
+
+    color: #754b23;
+    font-family: sans-serif;
+
+    .schedule-table {
+    
+    display: table-cell;
+    width: 50%;
+    margin: 30px;
+    padding: 30px;
+    }
+
+    .downDots {
+        display: table-cell;
+        width: 50%;
+        position: absolute;
+        left: 300px;
+        top: 630px;
+    }
+
+    .schedule-row {
+        background-color: #f6ede6;
+        padding: 30px;
+        color: #754b23;
+        font-family: sans-serif;
+        text-align: center;
+    }
+}

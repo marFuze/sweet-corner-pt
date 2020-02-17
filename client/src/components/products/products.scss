@@ -1,0 +1,37 @@
+    .products-container {
+        color: #754b23;
+        text-align: center;
+        font-family: sans-serif;
+
+    }
+
+    .products {
+        text-align: center;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-gap: 10px;
+        grid-auto-rows: minmax(100px, auto);
+        
+
+        .product-item {
+            background-color: rgb(227, 220, 211);
+        }
+
+        .product-item:hover {
+            background-color: gold;
+            cursor: pointer;
+        }
+    }
+
+    .product-details {
+        color: #754b23;
+        text-align: center;
+        margin-top: 20px;
+        margin-bottom: 20px;
+        font-family: sans-serif;
+
+        img {
+            width: 400px;
+            height: 400px;
+        }
+    }

@@ -1,0 +1,44 @@
+.cart-container {
+    text-align: center;
+    color: #754b23;
+    font-family: sans-serif;
+
+    .cart-table {
+        text-align: center;
+    }
+
+    .cart-thumbnail {
+        width: 100px;
+        height: 100px;
+    }
+
+    th {
+        margin: 10px;
+        padding: 10px;
+    }
+
+    td {
+        margin: 10px;
+        padding: 10px;
+    }
+
+    tr {
+        margin: 10px;
+        padding: 10px;
+    }
+
+    button {
+        margin: 10px;
+        width: 200px;
+        height: 50px;
+        color: white;
+        background-color: #06b4af;
+        
+    }
+
+    .link-button-text {
+        color: white;
+        text-decoration: none;
+        font-size: medium;
+    }
+}

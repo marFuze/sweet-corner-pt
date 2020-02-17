@@ -1,0 +1,27 @@
+.nav {
+    position: relative;
+    left: 210px;
+    
+    li {
+      font-size: large;
+      display: inline-block;
+      text-transform: capitalize;
+      text-align: center;
+      text-shadow: 1px 1px 3px darkgrey;
+      cursor: pointer;
+      font-family: sans-serif;
+      width: 10%;
+      // text-decoration: none;
+        
+    }
+
+
+    li:hover {
+        color: orange;
+      }
+
+      a {
+        color: #754b23;
+        text-decoration: none;
+      }
+}
