@@ -6,6 +6,9 @@ function ApplyRoutes(app){
     app.use(express.json()); 
 
     //const apiRouter = express.Router()
+
+    app.use('/api/auth/sign-in', require('./auth'))
+    
     app.use('/api/cart', require('./cart'))
 
     app.use('/api/products', require('./products'))
