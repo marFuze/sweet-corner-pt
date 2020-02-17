@@ -3,6 +3,8 @@ const express = require('express');
 function ApplyRoutes(app){
     
     app.use(express.urlencoded({extended: false}));
+    app.use(express.json()); 
+
     //const apiRouter = express.Router()
     app.use('/api/cart', require('./cart'))
 

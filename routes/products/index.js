@@ -31,7 +31,6 @@ router.get('/', async (req, res, next) => {
 
     }
     catch(err) {
-      
         next(err);
     }
 
@@ -97,7 +96,6 @@ router.get('/:product', async (req, res, next) => {
         res.send(singleProductData);
     }
     catch(err) {
-      
         next(err);
     }
 });
