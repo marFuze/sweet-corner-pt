@@ -16,7 +16,7 @@ export function getScheduleData(){
 export function getAllProducts(){
     return async function (dispatch) {
         try {
-            const resp = await axios.get(BASE_URL + '/api/products');
+            const resp = await axios.get('/api/products');
             dispatch({
                 type: types.GET_ALL_PRODUCTS,
                 products: resp.data.products
@@ -30,7 +30,7 @@ export function getAllProducts(){
 export function getProductDetails(productId){
     return async function (dispatch) {
         try {
-            const resp = await axios.get(`${BASE_URL}/api/products/${productId}`);
+            const resp = await axios.get(`/api/products/${productId}`);
             dispatch({
                 type: types.GET_PRODUCT_DETAILS,
                 product: resp.data

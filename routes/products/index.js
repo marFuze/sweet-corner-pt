@@ -4,11 +4,30 @@ const router = express.Router();
 
 router.get('/', async (req, res, next) => {
 
-    const sql = `select * from "products"`;
+    const sql = `select p."pid" as id, "caption", "cost", p."name", i."pid" as "tnId", "altText", "file", "type" from "products" as p left join "images" as i on p."id"=i."productId" where "type"='thumbnail';`;
 
         const resp = await db.query(sql);
 
-        res.send(resp.rows);
+        const { rows: productList } = resp
+
+        const formattedProductsList = productList.map( product => {
+           const  { tnId, altText, file, type, ...p} = product;
+
+           return {
+               ...p,
+               thumbnail: {
+                   id: tnId,
+                   altText: altText,
+                   file: file,
+                   type: type,
+                   url: `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
+               }
+           }
+        })
+
+        res.send({
+            products: formattedProductsList
+        });
 
 });
 
@@ -18,7 +37,11 @@ router.get('/full', async (req, res, next) => {
 
         const resp = await db.query(sql);
 
-        res.send(resp.rows);
+        return productList = {
+            products: 'test'
+        }
+
+        res.send(productList);
 
 });
 

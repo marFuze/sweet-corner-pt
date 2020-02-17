@@ -7,8 +7,8 @@
     "lib": "lib"
   },
   "scripts": {
-    "dev:startServer":"nodemon index.js",
-    "dev:startClient":"npm run start --prefix client",
+    "dev:startServer": "nodemon index.js",
+    "dev:startClient": "npm run start --prefix client",
     "start": "concurrently 'npm run dev:*'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
