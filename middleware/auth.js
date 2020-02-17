@@ -26,6 +26,7 @@ module.exports = async (req, res, next) => {
     const {cartId} = decodedToken;
 
     res.locals.activeCartId = cartId;
+    res.locals.existingToken = cartToken;
 
 
     // Go to the next thing...

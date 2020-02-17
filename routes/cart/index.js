@@ -10,7 +10,9 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
     console.log("TCL: quantity", quantity)
     
     const {product_id} = req.params;
-    let token = null;
+    let token = res.locals.existingToken;
+    console.log("TCL: token", token)
+    
     let {activeCartId} = res.locals
     console.log("TCL: activeCartId", activeCartId)
     let productIntegerId = null;
@@ -38,6 +40,7 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             
             productIntegerId = id;
             console.log("TCL: productIntegerId", productIntegerId)
+            
         }
 
         if (!activeCartId){
@@ -57,7 +60,7 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             }
 
             token = jwt.encode(cartTokenProps, jwtSecret)
-            //console.log("TCL: token", token)
+            console.log("TCL: new cart token", token)
 
             //check if product exists in any cart items
 
@@ -83,21 +86,19 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
                 console.log("TCL: updatedCartItem", updatedCartItem)
                 
                 }
+      
+        }  else
 
-            
-        }  
-
-        
-            //cart id from token
-            //guestCartId = res.locals.activeCartId;
+        {
+            //if active cart exists   
             //check cart id against cart table
-            const sql1 = `select "pid" from "carts" where "pid"=$1;`
+            const sql1 = `select "pid" from "carts" where "id"=$1;`
             const existingCart = await db.query(sql1,[activeCartId]);
             //console.log('existing cart', existingCart.rows)
             const {rows: existingCartRow} = existingCart
             console.log("TCL: existingCartRow", existingCartRow)
 
-            return
+        
             const [{pid: existingCartPid}] = existingCartRow
             console.log("TCL: pid", pid)
             existingCartId = existingCartPid;
@@ -117,7 +118,7 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             const addProductToCart = await db.query(sql2,[validProductId,quantity]);
             //console.log(addProductToCart.rows)
             }
-
+        }
           
 
             res.send(
