@@ -3,7 +3,7 @@ const {db} = require('../../db');
 const router = express.Router();
 
 router.get('/', async (req, res, next) => {
-
+    try {
     const sql = `select p."pid" as id, "caption", "cost", p."name", i."pid" as "tnId", "altText", "file", "type" from "products" as p left join "images" as i on p."id"=i."productId" where "type"='thumbnail';`;
 
         const resp = await db.query(sql);
@@ -28,6 +28,12 @@ router.get('/', async (req, res, next) => {
         res.send({
             products: formattedProductsList
         });
+
+    }
+    catch(err) {
+      
+        next(err);
+    }
 
 });
 
@@ -61,7 +67,7 @@ router.get('/', async (req, res, next) => {
 router.get('/:product', async (req, res, next) => {
 
     const {product} = req.params;
-    
+    try {
     const sql = `select p."pid" as id, "caption", "cost", p."name", i."pid" as "tnId", "altText", "file", "type" from "products" as p left join "images" as i on p."id"=i."productId" where p."pid"=$1;`
 
         const { rows: singleProduct } = await db.query(sql,[product]);
@@ -86,12 +92,14 @@ router.get('/:product', async (req, res, next) => {
                     url: `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
                 }
             }
-
-            
-
         });
             const singleProductData = formattedSingleProduct[0];
         res.send(singleProductData);
+    }
+    catch(err) {
+      
+        next(err);
+    }
 });
 
 module.exports = router;
