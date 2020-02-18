@@ -3,7 +3,7 @@ const router = express.Router();
 const {db} = require('../../db');
 const jwt = require('jwt-simple');
 const { jwtSecret } = require('../../config/jwt');
-const {generate} = require('../../lib/hash');
+const {generate, compare} = require('../../lib/hash');
 
 router.post('/create-account', async (req, res, next) => {
     const { email, firstName, lastName, password } = req.body;
@@ -31,13 +31,28 @@ router.post('/create-account', async (req, res, next) => {
 });
 
 
-router.post('/create-account', async (req, res, next) => {
+router.post('/sign-in', async (req, res, next) => {
+    const { email, password } = req.body;
+    //console.log("TCL: email", email)
+
     try {
 
+        const passwordHash = await db.query(`select "password" from "users" where "email"=$1;`,[email])
+        const {rows: returnedHash} = passwordHash
+        const [{password}] = returnedHash
+        const hashPass = password
+        console.log("TCL: hashPass", hashPass)
+
+        
+        const passwordCompare = await compare(password,hashPass)
+        console.log("TCL: passwordCompare", passwordCompare)
+        
+        //const signInResp = await db.query(`select "pid" from "users" where "email"=$1 and "password"=$2`,[])
+        res.send({message: "from sign-in"})
     }
 
     catch(err){
-        next(err);
+        next(err)
     }
 
 });
