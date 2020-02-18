@@ -7,8 +7,8 @@ function ApplyRoutes(app){
 
     //const apiRouter = express.Router()
 
-    app.use('/api/auth/sign-in', require('./auth'))
-    
+    app.use('/api/auth/', require('./auth'))
+
     app.use('/api/cart', require('./cart'))
 
     app.use('/api/products', require('./products'))
