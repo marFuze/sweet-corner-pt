@@ -34,21 +34,33 @@ router.post('/create-account', async (req, res, next) => {
 router.post('/sign-in', async (req, res, next) => {
     const { email, password } = req.body;
     //console.log("TCL: email", email)
+    const token = req.headers['x-cart-token'];
 
     try {
 
         const passwordHash = await db.query(`select "password" from "users" where "email"=$1;`,[email])
-        const {rows: returnedHash} = passwordHash
-        const [{password}] = returnedHash
-        const hashPass = password
-        console.log("TCL: hashPass", hashPass)
+        const dbPassword = passwordHash.rows[0].password
+    
+        const passwordCompareResult = await compare(password,dbPassword)
+       
+        if(!passwordCompareResult){
+            res.send(404, "Invalid username or password.")
+        }
+        {
 
-        
-        const passwordCompare = await compare(password,hashPass)
-        console.log("TCL: passwordCompare", passwordCompare)
-        
-        //const signInResp = await db.query(`select "pid" from "users" where "email"=$1 and "password"=$2`,[])
-        res.send({message: "from sign-in"})
+        const signInResp = await db.query(`select "pid", "firstName", "lastName" from "users" where "email"=$1 and "password"=$2`,[email,dbPassword])
+        const pid = signInResp.rows[0].pid
+        const firstName = signInResp.rows[0].firstName
+        const lastName = signInResp.rows[0].lastName
+        res.send({
+            "token": token,
+            "user": {
+                "name": `${firstName} ${lastName}`,
+                "email": email,
+                "pid": pid
+            }
+        })
+    }
     }
 
     catch(err){
