@@ -30,4 +30,16 @@ router.post('/create-account', async (req, res, next) => {
     }
 });
 
+
+router.post('/create-account', async (req, res, next) => {
+    try {
+
+    }
+
+    catch(err){
+        next(err);
+    }
+
+});
+
 module.exports = router;
