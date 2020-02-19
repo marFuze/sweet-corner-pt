@@ -15,7 +15,10 @@ router.post('/create-account', async (req, res, next) => {
     const { rows: newUserPid } = addedUser;
     const [{pid}] = newUserPid;
     const token = jwt.encode({uid: pid}, jwtSecret)
-
+        //sample code to expire token - 2 weeks per docs
+        // let expires = (Date.now() / 1000) + 60 * 30
+        // let nbf = Date.now() / 1000
+        // let token = await jwt.encode({nbf: nbf, exp: expires, id: user_id}, jwtSecret).
             res.send({
                 "token": token,
                 "user": {
