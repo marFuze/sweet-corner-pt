@@ -12,7 +12,6 @@ router.post('/create-account', async (req, res, next) => {
     try {  
     const addedUser = await db.query(`insert into "users" ("firstName","lastName","email","password") values ($1,$2,$3,$4) RETURNING pid`,
     [firstName, lastName, email, passwordHash]);
-
     const { rows: newUserPid } = addedUser;
     const [{pid}] = newUserPid;
     const token = jwt.encode({uid: pid}, jwtSecret)
@@ -25,18 +24,14 @@ router.post('/create-account', async (req, res, next) => {
                     "pid": pid
                 }});
             }
-    catch(err) {
-        next(err);
-    }
+    catch(err) {next(err)}
 });
-
 
 router.post('/sign-in', async (req, res, next) => {
     const { email, password } = req.body;
     const token = req.headers['x-cart-token'];
 
     try {
-
         const passwordHash = await db.query(`select "password" from "users" where "email"=$1;`,[email])
         const dbPassword = passwordHash.rows[0].password
         const passwordCompareResult = await compare(password,dbPassword)
@@ -45,7 +40,6 @@ router.post('/sign-in', async (req, res, next) => {
             res.send(404, "Invalid username or password.")
         }
         {
-
         const signInResp = await db.query(`select "pid", "firstName", "lastName" from "users" where "email"=$1 and "password"=$2`,[email,dbPassword])
         const pid = signInResp.rows[0].pid
         const firstName = signInResp.rows[0].firstName
@@ -60,36 +54,28 @@ router.post('/sign-in', async (req, res, next) => {
         })
     }
     }
-
-    catch(err){
-        next(err)
-    }
-
+    catch(err){next(err)}
 });
 
 router.get('/sign-in', async (req, res, next) => {
+    const authToken = req.headers.authorization
 
-    const authToken = req.headers['Authorization']
-    console.log("TCL: authToken", req.headers)
-    return
-    try{
-    const decodedToken = jwt.decode(authToken, jwtSecret);
-    console.log("TCL: decodedToken", decodedToken)
-    //const { name, email, pid } = decodedToken;
-    }
-    catch(err){
-        next(err)
-    }
+    try {
+    const decodedToken = jwt.decode(authToken, jwtSecret); 
+    const uid = decodedToken.uid
+    const userTokenVerification = await db.query(`select "firstName", "lastName", "email", "pid" from "users" where "pid"=$1;`,[uid])
+    const {rows: userData} = userTokenVerification
+    const [{ firstName, lastName, email, pid}] = userData
+    
     res.send({
         "user": {
-            "name": "fron get sign-in",
-            "email": "",
-            "pid": ""
+            "name": `${firstName} ${lastName}`,
+            "email": email,
+            "pid": pid
         }
     })
-
-
-
+    }
+    catch(err){next(err)}
 })
 
 module.exports = router;
