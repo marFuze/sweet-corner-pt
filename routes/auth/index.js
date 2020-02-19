@@ -33,14 +33,12 @@ router.post('/create-account', async (req, res, next) => {
 
 router.post('/sign-in', async (req, res, next) => {
     const { email, password } = req.body;
-    //console.log("TCL: email", email)
     const token = req.headers['x-cart-token'];
 
     try {
 
         const passwordHash = await db.query(`select "password" from "users" where "email"=$1;`,[email])
         const dbPassword = passwordHash.rows[0].password
-    
         const passwordCompareResult = await compare(password,dbPassword)
        
         if(!passwordCompareResult){
@@ -68,5 +66,30 @@ router.post('/sign-in', async (req, res, next) => {
     }
 
 });
+
+router.get('/sign-in', async (req, res, next) => {
+
+    const authToken = req.headers['Authorization']
+    console.log("TCL: authToken", req.headers)
+    return
+    try{
+    const decodedToken = jwt.decode(authToken, jwtSecret);
+    console.log("TCL: decodedToken", decodedToken)
+    //const { name, email, pid } = decodedToken;
+    }
+    catch(err){
+        next(err)
+    }
+    res.send({
+        "user": {
+            "name": "fron get sign-in",
+            "email": "",
+            "pid": ""
+        }
+    })
+
+
+
+})
 
 module.exports = router;
