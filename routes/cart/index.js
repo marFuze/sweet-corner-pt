@@ -12,6 +12,7 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
     let token = res.locals.existingToken;
     const {tokenCartPid} = res.locals
     let cartPid = tokenCartPid
+    const authToken = req.headers.authorization
 
     try {
         const sql = `select "pid" from "products" where "pid"=$1;`
@@ -64,6 +65,10 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
         }  else
 
         {
+            if(authToken){
+
+            } else {
+
             //convert tokenCartPid to tokenCartId
             const queriedTokenCartId = await db.query(`select "id" from "carts" where "pid"=$1;`,[tokenCartPid])
             const {rows: tokenCartIdResult} = queriedTokenCartId
@@ -87,6 +92,7 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             res.locals.itemId = updateProductCartItem.rows[0].pid
             res.locals.added = updateProductCartItem.rows[0].updatedAt
                 }
+            }
         }
             res.status(200).send(
                 {
@@ -117,5 +123,22 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
         next(err);
     }
 });
+
+
+router.get('/', async (req, res, next) => {
+    try {
+        const authToken = req.headers.authorization
+        const cartToken = req.headers['x-cart-token']
+
+        if(authToken){
+            const decodedTokenData = jwt.decode(authToken, jwtSecret)
+        }
+    }
+    catch(err){
+        next(err)
+    }
+})
+
+
 
 module.exports = router;
