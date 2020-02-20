@@ -91,14 +91,14 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
 
             //add new cartItem if product_id not found
             if(existingProduct === undefined || existingProduct.length == 0){
-            const addProductToCart = await db.query(`insert into "cartItems" ("cartId","productId","quantity") values ($1,$2,$3) RETURNING *;`,[tokenCartId,tableProductId,quantity]);
+            const addProductToCart = await db.query(`insert into "cartItems" ("cartId","productId","quantity") values ($1,$2,$3) RETURNING *;`,[userCartId,tableProductId,quantity]);
             res.locals.itemId = addProductToCart.rows[0].pid
             res.locals.added = addProdcutToCart.rows[0].createdAt
             }
 
             //update cartItem quantity if product_id found
             if(existingProduct.length > 0){
-            const updateProductCartItem = await db.query(`update "cartItems" set "quantity" = "quantity" + $1 where "cartId"=$2 and "productId"=$3 RETURNING *;`,[quantity,tokenCartId,tableProductId]);
+            const updateProductCartItem = await db.query(`update "cartItems" set "quantity" = "quantity" + $1 where "cartId"=$2 and "productId"=$3 RETURNING *;`,[quantity,userCartId,tableProductId]);
             res.locals.itemId = updateProductCartItem.rows[0].pid
             res.locals.added = updateProductCartItem.rows[0].updatedAt
                 }
@@ -106,20 +106,10 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             }
             
             //if no existing user cart exists check for cart associated with cart token
-            if(!userCartId) {
+            if(!userCartId && tokenCartPid) {
 
                 console.log('no user cart id triggered')
-            const activeCartStatus = 2;  //2 is active status cart in cartstatuses table
-            const {rows: tableCartIds} = await db.query(`insert into "carts" ("userId","pid","statusId") values ($1,uuid_generate_v4(),$2) RETURNING id, pid;`,[userId,activeCartStatus]);
-            const [{id,pid}] = tableCartIds;
-            const newCartId = id
-            cartPid = pid
-            //add cartItem
-            const newAddedCartItem = await db.query(`insert into "cartItems" ("cartId","productId","quantity") values ($1,$2,$3) returning *`,[newCartId,tableProductId,quantity])
-            res.locals.itemId = newAddedCartItem.rows[0].pid
-            res.locals.added = newAddedCartItem.rows[0].createdAt
-            } else {
-                if(userCartId) {
+
             //check for existing cartItems with same product
             //convert tokenCartPid to tokenCartId
             const queriedTokenCartId = await db.query(`select "id" from "carts" where "pid"=$1;`,[tokenCartPid])
@@ -148,9 +138,21 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             res.locals.itemId = updateProductCartItem.rows[0].pid
             res.locals.added = updateProductCartItem.rows[0].updatedAt
                 }
+            
+            } else {
+                if(!userCartId && !tokenCartPid) {
+                    const activeCartStatus = 2;  //2 is active status cart in cartstatuses table
+            const {rows: tableCartIds} = await db.query(`insert into "carts" ("userId","pid","statusId") values ($1,uuid_generate_v4(),$2) RETURNING id, pid;`,[userId,activeCartStatus]);
+            const [{id,pid}] = tableCartIds;
+            const newCartId = id
+            cartPid = pid
 
+            const newAddedCartItem = await db.query(`insert into "cartItems" ("cartId","productId","quantity") values ($1,$2,$3) returning *`,[newCartId,tableProductId,quantity])
+            res.locals.itemId = newAddedCartItem.rows[0].pid
+            res.locals.added = newAddedCartItem.rows[0].createdAt
                 }
-            }
+
+            } 
 
             } else {
 
