@@ -41,8 +41,16 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             tableProductId = id;
 
             const getProductDetails = await db.query(`select "cost", p."name", i."pid" as "tnId", "altText", "file", "type" from "products" as p left join "images" as i on p."id"=i."productId" where "type"='thumbnail' and p."pid"=$1;`,[verifiedProductPid])
-            const [{rows: productData}] = getProductDetails
-            const { cost, name, altText, file} = productData
+            
+            
+            const {rows: productData} = getProductDetails
+            //console.log("TCL: productData", productData)
+            const [{ cost, name, altText, file}] = productData
+            console.log("TCL: cost", cost)
+            res.locals.cost = cost
+            res.locals.name = name
+            res.locals.altText = altText
+            res.locals.file = file
         }
 
         if (!tokenCartPid){
@@ -52,7 +60,16 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             const newCartId = id
             cartPid = pid
 
-            const addedCartItem = await db.query(`insert into "cartItems" ("cartId","productId","quantity") values ($1,$2,$3) returning *`,[newCartId,tableProductId,quantity])
+            const newAddedCartItem = await db.query(`insert into "cartItems" ("cartId","productId","quantity") values ($1,$2,$3) returning *`,[newCartId,tableProductId,quantity])
+            const {rows: newAddedCartItemData} = newAddedCartItem
+            console.log("TCL: newAddedCartItemData", newAddedCartItemData)
+            
+            const { itemId, added } = newAddedCartItemData
+
+            const getCartItemDetails = await db.query(`select "pid", "createdAt" from "cartItems" where "pid"=$1;`,[pid])
+            const {rows: getCartItemData} = getCartItemDetails
+            res.locals.itemId = getCartItemData.pid
+            res.locals.added = getCartItemData.createdAt
             
            
             const newCartToken = {
@@ -80,19 +97,23 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             //add new cartItem if product_id not found
             if(existingProduct === undefined || existingProduct.length == 0){
             const addProductToCart = await db.query(`insert into "cartItems" ("cartId","productId","quantity") values ($1,$2,$3) RETURNING *;`,[tokenCartId,tableProductId,quantity]);
-            const [{rows: cartItemData}] = addProductToCart
-            const { pid } = cartItemData
-            const getCartItemDetails = await db.query(`select "pid" as "itemId", "createdAt" as "added" from "cartItems" where "pid"=$1;`,[pid])
-            const [{rows: getCartItemData}] = getCartItemDetails
-            const { itemId, added } = getCartItemData
-            res.locals.itemId = itemId
-            res.locals.added = added
+            const {rows: cartItemData} = addProductToCart
+            const [{ id }] = cartItemData
+            const getCartItemDetails = await db.query(`select "pid", "createdAt" from "cartItems" where "pid"=$1;`,[pid])
+            const {rows: getCartItemData} = getCartItemDetails
+            res.locals.itemId = getCartItemData.pid
+            res.locals.added = getCartItemData.createdAt
             }
 
             //update cartItem quantity if product_id found
             if(existingProduct.length > 0){
             const updateProductCartItem = await db.query(`update "cartItems" set "quantity" = "quantity" + $1 where "cartId"=$2 and "productId"=$3 RETURNING *;`,[quantity,tokenCartId,tableProductId]);
-            const {rows: updatedCartItem} = updateProductCartItem;  
+            const {rows: updatedCartItem} = updateProductCartItem;
+            console.log("TCL: updatedCartItem", updatedCartItem)
+            const getCartItemDetails = await db.query(`select "pid", "createdAt" from "cartItems" where "pid"=$1;`,[pid])
+            const {rows: getCartItemData} = getCartItemDetails
+            res.locals.itemId = getCartItemData.pid
+            res.locals.added = getCartItemData.createdAt
                 }
         }
             res.status(200).send(
@@ -101,20 +122,20 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
                     "cartToken": token,
                     "item": {
                         "added":res.locals.added,
-                        "each": cost,
+                        "each": res.locals.cost,
                         "itemId": res.locals.itemId,
-                        "name": name,
+                        "name": res.locals.name,
                         "productId": verifiedProductPid,
                         "quantity": quantity,
                         "thumbnail": {
-                            "altText": altText,
-                            "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${file}]`
+                            "altText": res.locals.altText,
+                            "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${res.locals.file}]`
                         },
-                        "total": quantity * cost
+                        "total": quantity * res.locals.cost
                     },
                     "message": "added to cart",
                     "total": {
-                        "cost": quantity * cost,
+                        "cost": quantity * res.locals.cost,
                         "items": quantity
                 }
         })
