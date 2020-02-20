@@ -13,6 +13,8 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
     const {tokenCartPid} = res.locals
     let cartPid = tokenCartPid
     const authToken = req.headers.authorization
+    console.log("TCL: authToken", authToken)
+    
 
     try {
         const sql = `select "pid" from "products" where "pid"=$1;`
@@ -44,7 +46,7 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             res.locals.file = file
         }
 
-        if (!tokenCartPid){
+        if (!tokenCartPid && !authToken){
             const activeCartStatus = 2;  //2 is active status cart in cartstatuses table
             const {rows: tableCartIds} = await db.query(`insert into "carts" ("pid","statusId") values (uuid_generate_v4(),$1) RETURNING id, pid;`,[activeCartStatus]);
             const [{id,pid}] = tableCartIds;
@@ -66,6 +68,16 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
 
         {
             if(authToken){
+                console.log('auth token received')
+
+                const decodedTokenData = jwt.decode(authToken,jwtSecret)
+                const {uid} = decodedTokenData
+
+                const getUserId = await db.query(`select "id" from "users" where "pid"=$1;`,[uid])
+                console.log("TCL: getUserId", getUserId)
+                
+                
+
 
             } else {
 
