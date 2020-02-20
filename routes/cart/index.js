@@ -12,7 +12,8 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
     const urlProductPId = product_id
 
     let token = res.locals.existingToken;
-    let {tokenCartPid} = res.locals
+    const {tokenCartPid} = res.locals
+    let cartPid = tokenCartPid
     console.log("TCL: tokenCartPid", tokenCartPid)
     
     
@@ -31,14 +32,17 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             res.status(404).send('Invalid Product Id');
             return;
         } else {
-            //extract product id for use in subsequent queries
+            //get product id from product pid
             console.log('product id is valid')
-            const sql = `select "id" from "products" where "pid"=$1;`
-            const translatedProductId = await db.query(sql,[verifiedProductPid])
+            const translatedProductId = await db.query(`select "id" from "products" where "pid"=$1;`,[verifiedProductPid])
             const {rows} = translatedProductId;
             //console.log('rows',productIDExists) 
             const [{id}] = rows;
             tableProductId = id;
+
+            const getProductDetails = await db.query(`select "cost", p."name", i."pid" as "tnId", "altText", "file", "type" from "products" as p left join "images" as i on p."id"=i."productId" where "type"='thumbnail' and p."pid"=$1;`,[verifiedProductPid])
+            const [{rows: productData}] = getProductDetails
+            const { cost, name, altText, file} = productData
         }
 
         if (!tokenCartPid){
@@ -46,13 +50,13 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             const {rows: tableCartIds} = await db.query(`insert into "carts" ("pid","statusId") values (uuid_generate_v4(),$1) RETURNING id, pid;`,[activeCartStatus]);
             const [{id,pid}] = tableCartIds;
             const newCartId = id
-            const newCartPid = pid
+            cartPid = pid
 
             const addedCartItem = await db.query(`insert into "cartItems" ("cartId","productId","quantity") values ($1,$2,$3) returning *`,[newCartId,tableProductId,quantity])
-            console.log("TCL: addCartItem", addedCartItem.rows[0])
+            
            
             const newCartToken = {
-                cartPid: newCartPid,
+                cartPid: cartPid,
                 ts: Date()
             }
 
@@ -76,6 +80,13 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             //add new cartItem if product_id not found
             if(existingProduct === undefined || existingProduct.length == 0){
             const addProductToCart = await db.query(`insert into "cartItems" ("cartId","productId","quantity") values ($1,$2,$3) RETURNING *;`,[tokenCartId,tableProductId,quantity]);
+            const [{rows: cartItemData}] = addProductToCart
+            const { pid } = cartItemData
+            const getCartItemDetails = await db.query(`select "pid" as "itemId", "createdAt" as "added" from "cartItems" where "pid"=$1;`,[pid])
+            const [{rows: getCartItemData}] = getCartItemDetails
+            const { itemId, added } = getCartItemData
+            res.locals.itemId = itemId
+            res.locals.added = added
             }
 
             //update cartItem quantity if product_id found
@@ -86,10 +97,28 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
         }
             res.status(200).send(
                 {
-                   "message": "product added to cart",
-                   "cartToken": token,
-                })
-        }
+                    "cartId": cartPid,
+                    "cartToken": token,
+                    "item": {
+                        "added":res.locals.added,
+                        "each": cost,
+                        "itemId": res.locals.itemId,
+                        "name": name,
+                        "productId": verifiedProductPid,
+                        "quantity": quantity,
+                        "thumbnail": {
+                            "altText": altText,
+                            "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${file}]`
+                        },
+                        "total": quantity * cost
+                    },
+                    "message": "added to cart",
+                    "total": {
+                        "cost": quantity * cost,
+                        "items": quantity
+                }
+        })
+    }
     
     catch(err) {
         next(err);
