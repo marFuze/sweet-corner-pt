@@ -7,18 +7,11 @@ const auth = require('../../middleware/auth');
 
 router.post('/items/:product_id', auth, async (req, res, next) => {
     const {quantity} = req.body;
-    
     const {product_id} = req.params
     const urlProductPId = product_id
-
     let token = res.locals.existingToken;
     const {tokenCartPid} = res.locals
     let cartPid = tokenCartPid
-    console.log("TCL: tokenCartPid", tokenCartPid)
-    
-    
-
-    let productId = null;
 
     try {
         const sql = `select "pid" from "products" where "pid"=$1;`
@@ -33,7 +26,6 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             return;
         } else {
             //get product id from product pid
-            console.log('product id is valid')
             const translatedProductId = await db.query(`select "id" from "products" where "pid"=$1;`,[verifiedProductPid])
             const {rows} = translatedProductId;
             //console.log('rows',productIDExists) 
@@ -41,12 +33,10 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             tableProductId = id;
 
             const getProductDetails = await db.query(`select "cost", p."name", i."pid" as "tnId", "altText", "file", "type" from "products" as p left join "images" as i on p."id"=i."productId" where "type"='thumbnail' and p."pid"=$1;`,[verifiedProductPid])
-            
-            
+                
             const {rows: productData} = getProductDetails
             //console.log("TCL: productData", productData)
             const [{ cost, name, altText, file}] = productData
-            console.log("TCL: cost", cost)
             res.locals.cost = cost
             res.locals.name = name
             res.locals.altText = altText
@@ -61,30 +51,20 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             cartPid = pid
 
             const newAddedCartItem = await db.query(`insert into "cartItems" ("cartId","productId","quantity") values ($1,$2,$3) returning *`,[newCartId,tableProductId,quantity])
-            const {rows: newAddedCartItemData} = newAddedCartItem
-            console.log("TCL: newAddedCartItemData", newAddedCartItemData)
-            
-            const { itemId, added } = newAddedCartItemData
-
-            const getCartItemDetails = await db.query(`select "pid", "createdAt" from "cartItems" where "pid"=$1;`,[pid])
-            const {rows: getCartItemData} = getCartItemDetails
-            res.locals.itemId = getCartItemData.pid
-            res.locals.added = getCartItemData.createdAt
-            
-           
+            res.locals.itemId = newAddedCartItem.rows[0].pid
+            res.locals.added = newAddedCartItem.rows[0].createdAt
+                      
             const newCartToken = {
                 cartPid: cartPid,
                 ts: Date()
             }
 
             token = jwt.encode(newCartToken, jwtSecret)
-            console.log("TCL: new cart token", token)
       
         }  else
 
         {
             //convert tokenCartPid to tokenCartId
-
             const queriedTokenCartId = await db.query(`select "id" from "carts" where "pid"=$1;`,[tokenCartPid])
             const {rows: tokenCartIdResult} = queriedTokenCartId
             const [{id}] = tokenCartIdResult
@@ -97,23 +77,15 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             //add new cartItem if product_id not found
             if(existingProduct === undefined || existingProduct.length == 0){
             const addProductToCart = await db.query(`insert into "cartItems" ("cartId","productId","quantity") values ($1,$2,$3) RETURNING *;`,[tokenCartId,tableProductId,quantity]);
-            const {rows: cartItemData} = addProductToCart
-            const [{ id }] = cartItemData
-            const getCartItemDetails = await db.query(`select "pid", "createdAt" from "cartItems" where "pid"=$1;`,[pid])
-            const {rows: getCartItemData} = getCartItemDetails
-            res.locals.itemId = getCartItemData.pid
-            res.locals.added = getCartItemData.createdAt
+            res.locals.itemId = addProductToCart.rows[0].pid
+            res.locals.added = addProdcutToCart.rows[0].createdAt
             }
 
             //update cartItem quantity if product_id found
             if(existingProduct.length > 0){
             const updateProductCartItem = await db.query(`update "cartItems" set "quantity" = "quantity" + $1 where "cartId"=$2 and "productId"=$3 RETURNING *;`,[quantity,tokenCartId,tableProductId]);
-            const {rows: updatedCartItem} = updateProductCartItem;
-            console.log("TCL: updatedCartItem", updatedCartItem)
-            const getCartItemDetails = await db.query(`select "pid", "createdAt" from "cartItems" where "pid"=$1;`,[pid])
-            const {rows: getCartItemData} = getCartItemDetails
-            res.locals.itemId = getCartItemData.pid
-            res.locals.added = getCartItemData.createdAt
+            res.locals.itemId = updateProductCartItem.rows[0].pid
+            res.locals.added = updateProductCartItem.rows[0].updatedAt
                 }
         }
             res.status(200).send(
@@ -145,7 +117,5 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
         next(err);
     }
 });
-
-
 
 module.exports = router;
