@@ -12,7 +12,6 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
     const urlProductPId = product_id
 
     let token = res.locals.existingToken;
-    
     let {tokenCartId} = res.locals
 
     let productId = null;
@@ -41,8 +40,7 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
 
         if (!tokenCartId){
             const activeCartStatus = 2;  //2 is active status cart in cartstatuses table
-            const sql = `insert into "carts" ("pid","statusId") values (uuid_generate_v4(),$1) RETURNING id, pid;`
-            const {rows: tableCartIds} = await db.query(sql,[activeCartStatus]);
+            const {rows: tableCartIds} = await db.query(`insert into "carts" ("pid","statusId") values (uuid_generate_v4(),$1) RETURNING id, pid;`,[activeCartStatus]);
             const [{id,pid}] = tableCartIds;
             const newCartId = id
             const newCartPid = pid
@@ -61,33 +59,18 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
         }  else
 
         {
-            //if active cart exists   
-            //check cart id against cart table
-            const sql1 = `select "pid" from "carts" where "pid"=$1;`
-            const existingCart = await db.query(sql1,[activeCartId]);
-            //console.log('existing cart', existingCart.rows)
-            const {rows: existingCartRow} = existingCart
-        
-            const [{pid: existingCartPid}] = existingCartRow
-            existingCartId = existingCartPid;
-
-            //check if product exists in any cart items
-
-            const sql3 = `select "pid" from "cartItems" where "productId"=$1`
-            const existingProductCartItem = await db.query(sql3,[validProductId])
+            //check for existing product_id in cartItems
+            const existingProductCartItem = await db.query(`select "id" from "cartItems" where "productId"=$1`,[tableProductId])
             const {rows: existingProduct} = existingProductCartItem
-            //console.log("TCL: existingProduct", existingProduct.length)
-       
+            
+            //add new cartItem if product_id not found
             if(existingProduct === undefined || existingProduct.length == 0){
-            //add product as cart item to cart's cartItems table
-            const sql2 = `insert into "cartItems" ("productId","quantity") values ($1,$2) RETURNING *;`
-            const addProductToCart = await db.query(sql2,[validProductId,quantity]);
-            //console.log(addProductToCart.rows)
+            const addProductToCart = await db.query(`insert into "cartItems" ("cartId","productId","quantity") values ($1,$2) RETURNING *;`,[tokenCartId,tableProductId,quantity]);
             }
 
+            //update cartItem quantity if product_id found
             if(existingProduct.length > 0){
-                const sql4 = `update "cartItems" set "quantity" = "quantity" + $1 where "productId"=$2 RETURNING *;`
-                const updateProductCartItem = await db.query(sql4,[quantity,validProductId]);
+                const updateProductCartItem = await db.query(`update "cartItems" set "quantity" = "quantity" + $1 where "cartId"=$2 and "productId"=$3 RETURNING *;`,[quantity,tokenCartId,tableProductId]);
                 const {rows: updatedCartItem} = updateProductCartItem;  
                 }
         }
