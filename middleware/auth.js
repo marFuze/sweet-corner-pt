@@ -23,9 +23,9 @@ module.exports = async (req, res, next) => {
       console.log ('auth decode triggered')
     const decodedToken = jwt.decode(cartToken, jwtSecret);
     
-    const {cartId} = decodedToken;
+    const {cartPid} = decodedToken;
 
-    res.locals.tokenCartId = cartId;
+    res.locals.tokenCartPid = cartPid;
     res.locals.existingToken = cartToken;
 
 

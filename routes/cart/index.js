@@ -12,7 +12,10 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
     const urlProductPId = product_id
 
     let token = res.locals.existingToken;
-    let {tokenCartId} = res.locals
+    let {tokenCartPid} = res.locals
+    console.log("TCL: tokenCartPid", tokenCartPid)
+    
+    
 
     let productId = null;
 
@@ -38,43 +41,50 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             tableProductId = id;
         }
 
-        if (!tokenCartId){
+        if (!tokenCartPid){
             const activeCartStatus = 2;  //2 is active status cart in cartstatuses table
             const {rows: tableCartIds} = await db.query(`insert into "carts" ("pid","statusId") values (uuid_generate_v4(),$1) RETURNING id, pid;`,[activeCartStatus]);
             const [{id,pid}] = tableCartIds;
             const newCartId = id
             const newCartPid = pid
 
-            const addCartItem = await db.query(`insert into "cartItems" ("cartId","productId","quantity") values ($1,$2,$3) returning *`,[newCartId,tableProductId,quantity])
-            console.log("TCL: addCartItem", addCartItem)
+            const addedCartItem = await db.query(`insert into "cartItems" ("cartId","productId","quantity") values ($1,$2,$3) returning *`,[newCartId,tableProductId,quantity])
+            console.log("TCL: addCartItem", addedCartItem.rows[0])
            
             const newCartToken = {
-                cartId: newCartPid,
+                cartPid: newCartPid,
                 ts: Date()
             }
 
-            token = jwt.encode(cartTokenProps, jwtSecret)
+            token = jwt.encode(newCartToken, jwtSecret)
             console.log("TCL: new cart token", token)
       
         }  else
 
         {
+            //convert tokenCartPid to tokenCartId
+
+            const queriedTokenCartId = await db.query(`select "id" from "carts" where "pid"=$1;`,[tokenCartPid])
+            const {rows: tokenCartIdResult} = queriedTokenCartId
+            const [{id}] = tokenCartIdResult
+            const tokenCartId = id
+
             //check for existing product_id in cartItems
-            const existingProductCartItem = await db.query(`select "id" from "cartItems" where "productId"=$1`,[tableProductId])
-            const {rows: existingProduct} = existingProductCartItem
+            const existingProductCartItemId = await db.query(`select "id" from "cartItems" where "productId"=$1 and "cartId"=$2;`,[tableProductId,tokenCartId])
+            const {rows: existingProduct} = existingProductCartItemId
             
             //add new cartItem if product_id not found
             if(existingProduct === undefined || existingProduct.length == 0){
-            const addProductToCart = await db.query(`insert into "cartItems" ("cartId","productId","quantity") values ($1,$2) RETURNING *;`,[tokenCartId,tableProductId,quantity]);
+            const addProductToCart = await db.query(`insert into "cartItems" ("cartId","productId","quantity") values ($1,$2,$3) RETURNING *;`,[tokenCartId,tableProductId,quantity]);
             }
 
             //update cartItem quantity if product_id found
             if(existingProduct.length > 0){
-                const updateProductCartItem = await db.query(`update "cartItems" set "quantity" = "quantity" + $1 where "cartId"=$2 and "productId"=$3 RETURNING *;`,[quantity,tokenCartId,tableProductId]);
-                const {rows: updatedCartItem} = updateProductCartItem;  
+            const updateProductCartItem = await db.query(`update "cartItems" set "quantity" = "quantity" + $1 where "cartId"=$2 and "productId"=$3 RETURNING *;`,[quantity,tokenCartId,tableProductId]);
+            const {rows: updatedCartItem} = updateProductCartItem;  
                 }
         }
-            res.send(
+            res.status(200).send(
                 {
                    "message": "product added to cart",
                    "cartToken": token,
