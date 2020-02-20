@@ -73,18 +73,21 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
                 const decodedTokenData = jwt.decode(authToken,jwtSecret)
                 const {uid} = decodedTokenData
                 const getUserId = await db.query(`select "id" from "users" where "pid"=$1;`,[uid])
-                const userId = getUserId.rows[0].uid
+                //console.log("TCL: getUserId", getUserId)
+                const userId = getUserId.rows[0].id
+                
 
             //check for existing user cart
 
             const checkForUserCarts = await db.query('select "id" from "carts" where "userId"=$1 and "statusId"=$2;',[userId, 2])
-            const userCartId = checkForUserCarts.rows[0]
+            const userCartId = checkForUserCarts.rows[0].id
 
             //if user cart found add product as new cartItem or add to existing cartItem
 
             if(userCartId){
 
                 console.log('user cartid triggered')
+                
                 //check for existing product_id in cartItems
             const existingProductCartItemId = await db.query(`select "id" from "cartItems" where "productId"=$1 and "cartId"=$2;`,[tableProductId,userCartId])
             const {rows: existingProduct} = existingProductCartItemId
@@ -141,8 +144,11 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             
             } else {
                 if(!userCartId && !tokenCartPid) {
+                    console.log("no existing user cart and no cart token")
                     const activeCartStatus = 2;  //2 is active status cart in cartstatuses table
             const {rows: tableCartIds} = await db.query(`insert into "carts" ("userId","pid","statusId") values ($1,uuid_generate_v4(),$2) RETURNING id, pid;`,[userId,activeCartStatus]);
+            console.log("TCL: tableCartIds", tableCartIds)
+            console.log("TCL: userId", userId)
             const [{id,pid}] = tableCartIds;
             const newCartId = id
             cartPid = pid
@@ -155,7 +161,7 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
             } 
 
             } else {
-
+                console.log('no auth triggered')
             //convert tokenCartPid to tokenCartId
             const queriedTokenCartId = await db.query(`select "id" from "carts" where "pid"=$1;`,[tokenCartPid])
             const {rows: tokenCartIdResult} = queriedTokenCartId
