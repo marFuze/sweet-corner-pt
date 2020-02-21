@@ -233,20 +233,31 @@ router.get('/', async (req, res, next) => {
             const decodedTokenData = jwt.decode(authToken,jwtSecret)
                 const {uid} = decodedTokenData
                 const getUserId = await db.query(`select "id" from "users" where "pid"=$1;`,[uid])
-                //console.log("TCL: getUserId", getUserId)
-                //console.log("TCL: getUserId", getUserId)
                 const userId = getUserId.rows[0].id
-                console.log("TCL: userId", userId)
             //check for existing user cart
-
             const checkForUserCarts = await db.query('select "id" from "carts" where "userId"=$1 and "statusId"=$2;',[userId, 2])
-            //console.log("TCL: checkForUserCarts", checkForUserCarts)
-            //console.log("TCL: checkForUserCarts", checkForUserCarts)
             const userCartId = checkForUserCarts.rows[0].id
-            console.log("TCL: userCartId", userCartId)
             res.locals.cartId = userCartId
-                
-        } else {
+            const getUserCartIdItems = await db.query(`select * from "cartItems" where "cartId"=$1;`,[userCartId])
+            const getUserCartIdItemsResult = getUserCartIdItems.rows
+            console.log("TCL: getUserCartIdItemsResult", getUserCartIdItemsResult)
+
+            const authCartItems = getUserCartIdItemsResult.map( items => {
+                const  { id, pid, cartId, productId, quantity, createdAt} = items;
+     
+                return {
+                        "cart list": {
+                        "pid": pid
+                        }
+                }
+             })
+
+             res.status(200).send(
+                {
+                    cartId: authCartItems
+            })
+
+        }
             if(cartToken){
             console.log('cartToken triggered')
             const decodedToken = jwt.decode(cartToken, jwtSecret);
@@ -255,12 +266,22 @@ router.get('/', async (req, res, next) => {
             const getCartTokenCart = await db.query(`select * from "carts" where "pid"=$1`,[cartPid])
             const cartTokenCartId = getCartTokenCart.rows[0].id
             res.locals.cartId = cartTokenCartId
-            }
+            const getTokenCartIdItems = await db.query(`select * from "cartItems" where "cartId"=$1;`,[cartTokenCartId])
+            const getTokenCartIdItemsResult = getTokenCartIdItems.rows
+            const tokenCartItems = getTokenCartIdItemsResult.map( items => {
+                const  { id, pid, cartId, productId, quantity, createdAt} = items;
+     
+                return {
+                        "cart list": {
+                        "pid": pid
+                        }
+                }
+             })
+             res.status(200).send(
+                {
+                    cartId: tokenCartItems
+            })
         }
-        res.status(200).send(
-            {
-                cartId: res.locals.cartId
-        })
     }
     catch(err){
         next(err)
