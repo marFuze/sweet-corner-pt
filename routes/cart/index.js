@@ -74,13 +74,17 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
                 const {uid} = decodedTokenData
                 const getUserId = await db.query(`select "id" from "users" where "pid"=$1;`,[uid])
                 //console.log("TCL: getUserId", getUserId)
+                //console.log("TCL: getUserId", getUserId)
                 const userId = getUserId.rows[0].id
+                console.log("TCL: userId", userId)
                 
 
             //check for existing user cart
 
             const checkForUserCarts = await db.query('select "id" from "carts" where "userId"=$1 and "statusId"=$2;',[userId, 2])
+            //console.log("TCL: checkForUserCarts", checkForUserCarts)
             const userCartId = checkForUserCarts.rows[0].id
+            console.log("TCL: userCartId", userCartId)
 
             //if user cart found add product as new cartItem or add to existing cartItem
 
@@ -122,7 +126,7 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
 
             //add userId to cart
 
-            const updateCartWithUserId = await db.query(`update "carts" set "userId"=$1 where "cartId"=$2;`,[userId,tokenCartId])
+            const updateCartWithUserId = await db.query(`update "carts" set "userId"=$1 where "id"=$2;`,[userId,tokenCartId])
 
             //check for existing product_id in cartItems
             const existingProductCartItemId = await db.query(`select "id" from "cartItems" where "productId"=$1 and "cartId"=$2;`,[tableProductId,tokenCartId])
