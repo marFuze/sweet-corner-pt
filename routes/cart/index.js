@@ -223,13 +223,44 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
 
 
 router.get('/', async (req, res, next) => {
+    const authToken = req.headers.authorization
+    const cartToken = req.headers['x-cart-token']
     try {
-        const authToken = req.headers.authorization
-        const cartToken = req.headers['x-cart-token']
+        
 
         if(authToken){
-            const decodedTokenData = jwt.decode(authToken, jwtSecret)
+            console.log('auth token triggered')
+            const decodedTokenData = jwt.decode(authToken,jwtSecret)
+                const {uid} = decodedTokenData
+                const getUserId = await db.query(`select "id" from "users" where "pid"=$1;`,[uid])
+                //console.log("TCL: getUserId", getUserId)
+                //console.log("TCL: getUserId", getUserId)
+                const userId = getUserId.rows[0].id
+                console.log("TCL: userId", userId)
+            //check for existing user cart
+
+            const checkForUserCarts = await db.query('select "id" from "carts" where "userId"=$1 and "statusId"=$2;',[userId, 2])
+            //console.log("TCL: checkForUserCarts", checkForUserCarts)
+            //console.log("TCL: checkForUserCarts", checkForUserCarts)
+            const userCartId = checkForUserCarts.rows[0].id
+            console.log("TCL: userCartId", userCartId)
+            res.locals.cartId = userCartId
+                
+        } else {
+            if(cartToken){
+            console.log('cartToken triggered')
+            const decodedToken = jwt.decode(cartToken, jwtSecret);
+            const {cartPid} = decodedToken;
+            res.locals.tokenCartPid = cartPid;
+            const getCartTokenCart = await db.query(`select * from "carts" where "pid"=$1`,[cartPid])
+            const cartTokenCartId = getCartTokenCart.rows[0].id
+            res.locals.cartId = cartTokenCartId
+            }
         }
+        res.status(200).send(
+            {
+                cartId: res.locals.cartId
+        })
     }
     catch(err){
         next(err)
