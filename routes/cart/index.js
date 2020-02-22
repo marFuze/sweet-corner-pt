@@ -409,25 +409,6 @@ router.get('/totals', async (req, res, next) => {
             const getCartTotalsResult = getCartTotals.rows
             const [{ totalcost, totalquantity}] = getCartTotalsResult
 
-            const authCartItems = getUserCartIdItemsResult.map( items => {
-                const  { pid, productId, quantity, createdAt, cost, name, altText, file } = items
-     
-                return {
-        
-                        "added": createdAt,
-                        "each": cost,
-                        "itemId": pid,
-                        "name": name,
-                        "productId": productId,
-                        "quantity": quantity,
-                        "thumbnail": {
-                            "altText": altText,
-                            "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
-                        },
-                        "total": cost * quantity
-                }
-             })
-
              res.status(200).send(
                 {
                      total: {
@@ -462,27 +443,7 @@ router.get('/totals', async (req, res, next) => {
             const getCartTotals = await db.query(`select sum(cost) as totalCost, sum(quantity) as totalQuantity from "cartItems" as ci join "products" as p on ci."productId"=p."id" where "cartId"=$1;`,[cartTokenCartId])
             const getCartTotalsResult = getCartTotals.rows
             const [{ totalcost, totalquantity}] = getCartTotalsResult
-            //console.log("TCL: getCartTotalsResult", getCartTotalsResult)
-
-            const authCartItems = getTokenCartIdItemsResult.map( items => {
-                const  { pid, productId, quantity, createdAt, cost, name, altText, file } = items
-     
-                return {
-        
-                        "added": createdAt,
-                        "each": cost,
-                        "itemId": pid,
-                        "name": name,
-                        "productId": productId,
-                        "quantity": quantity,
-                        "thumbnail": {
-                            "altText": altText,
-                            "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
-                        },
-                        "total": cost * quantity
-                }
-             })
-
+           
              res.status(200).send(
                 {
                      total: {
