@@ -226,6 +226,17 @@ router.get('/', async (req, res, next) => {
     const authToken = req.headers.authorization
     const cartToken = req.headers['x-cart-token']
     try {
+
+        if(!authToken && !cartToken){
+
+            res.status(404).send(
+                {
+                    "cartId": null,
+                    "message": "No active cart"
+                }
+            )
+            return
+        }
         
 
         if(authToken){
@@ -236,6 +247,16 @@ router.get('/', async (req, res, next) => {
             const userId = getUserId.rows[0].id
             //check for existing user cart and get related cartItems
             const checkForUserCarts = await db.query('select "id","pid" from "carts" where "userId"=$1 and "statusId"=$2;',[userId, 2])
+            if(!checkForUserCarts){
+
+                res.status(404).send(
+                    {
+                        "cartId": null,
+                        "message": "No active cart"
+                    }
+                )
+                return
+            }
             const userCartId = checkForUserCarts.rows[0].id
             const userCartPid = checkForUserCarts.rows[0].pid
             res.locals.cartId = userCartId
@@ -282,6 +303,16 @@ router.get('/', async (req, res, next) => {
             res.locals.tokenCartPid = cartPid;
             //convert cart pid to id
             const getCartTokenCart = await db.query(`select * from "carts" where "pid"=$1`,[cartPid])
+            if(!getCartTokenCart){
+
+                res.status(404).send(
+                    {
+                        "cartId": null,
+                        "message": "No active cart"
+                    }
+                )
+                return
+            }
             const cartTokenCartId = getCartTokenCart.rows[0].id
             res.locals.cartId = cartTokenCartId
             //get cart items
