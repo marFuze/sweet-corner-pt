@@ -243,7 +243,10 @@ router.get('/', async (req, res, next) => {
             res.locals.cartPid = userCartPid
             const getUserCartIdItems = await db.query(`select * from "cartItems" as ci join "products" as p on ci."productId"=p."id" join "images" as i on i."productId"=p."id" where "cartId"=$1 and "type"=$2;`,[userCartId,'thumbnail'])
             const getUserCartIdItemsResult = getUserCartIdItems.rows
-            console.log("TCL: getUserCartIdItemsResult", getUserCartIdItemsResult)
+            //console.log("TCL: getUserCartIdItemsResult", getUserCartIdItemsResult)
+            //get cart totals
+            const getCartTotals = await db.query(`select sum(cost) as totalCost, sum(quantity) as totalQuantity from "cartItems" as ci join "products" as p on ci."productId"=p."id" where "cartId"=$1 group by ci."id";`,[userCartId])
+            const getCartTotalsResult = getCartTotals.rows
 
             const authCartItems = getUserCartIdItemsResult.map( items => {
                 const  { pid, productId, quantity, createdAt, cost, name, altText, file } = items
