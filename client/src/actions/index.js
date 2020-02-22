@@ -115,7 +115,7 @@ export function getCartTotals(){
                 }
             }
 
-            const resp = await axios.get(BASE_URL + '/api/cart/totals',axiosConfig);
+            const resp = await axios.get('/api/cart/totals',axiosConfig);
 
             dispatch({
                 type: types.GET_CART_TOTALS,
