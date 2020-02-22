@@ -88,7 +88,7 @@ export function getActiveCart() {
             }
         }
 
-        const resp = await axios.get(BASE_URL + '/api/cart',axiosConfig
+        const resp = await axios.get('/api/cart',axiosConfig
         );
 
         dispatch({

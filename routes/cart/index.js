@@ -265,13 +265,8 @@ router.get('/', async (req, res, next) => {
                         "thumbnail": {
                             "altText": altText,
                             "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
-                        }
-                    
-                    // ],
-                    // "total": {
-                    //     "cost": totalcost,
-                    //     "items": totalquantity
-                    // }
+                        },
+                        "total": cost * quantity
                 }
              })
 
@@ -280,8 +275,8 @@ router.get('/', async (req, res, next) => {
                     cartId: res.locals.cartPid,
                     items: authCartItems,
                      total: {
-                        cost: totalcost,
-                        items: totalquantity
+                        cost: parseInt(totalcost),
+                        items: parseInt(totalquantity)
                     }
             })
 
@@ -303,7 +298,8 @@ router.get('/', async (req, res, next) => {
             const getCartTotals = await db.query(`select sum(cost) as totalCost, sum(quantity) as totalQuantity from "cartItems" as ci join "products" as p on ci."productId"=p."id" where "cartId"=$1;`,[cartTokenCartId])
             const getCartTotalsResult = getCartTotals.rows
             const [{ totalcost, totalquantity}] = getCartTotalsResult
-            console.log("TCL: getCartTotalsResult", getCartTotalsResult)
+            console.log("TCL: totalcost", totalcost)
+            //console.log("TCL: getCartTotalsResult", getCartTotalsResult)
 
             const authCartItems = getTokenCartIdItemsResult.map( items => {
                 const  { pid, productId, quantity, createdAt, cost, name, altText, file } = items
@@ -319,7 +315,8 @@ router.get('/', async (req, res, next) => {
                         "thumbnail": {
                             "altText": altText,
                             "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
-                        }
+                        },
+                        "total": cost * quantity
                 }
              })
 
@@ -328,8 +325,8 @@ router.get('/', async (req, res, next) => {
                     cartId: res.locals.cartPid,
                     items: authCartItems,
                      total: {
-                        cost: totalcost,
-                        items: totalquantity
+                        "cost": parseInt(totalcost),
+                        "items": parseInt(totalquantity)
                     }
             })
         }
