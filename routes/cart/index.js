@@ -489,19 +489,12 @@ router.put('/items/:item_id', async (req, res, next) => {
             const userCartId = checkForUserCarts.rows[0].id
             const userCartPid = checkForUserCarts.rows[0].pid
             res.locals.cartId = userCartId
-            //console.log("TCL: res.locals.cartId", res.locals.cartId)
             res.locals.cartPid = userCartPid
-            //console.log("TCL: res.locals.cartPid", res.locals.cartPid)
-            // const getUserCartIdItems = await db.query(`select * from "cartItems" as ci join "products" as p on ci."productId"=p."id" join "images" as i on i."productId"=p."id" where "cartId"=$1 and ci."pid"=$2 and "type"=$3;`,[userCartId, item_id,'thumbnail'])
-            // const getUserCartIdItemsResult = getUserCartIdItems.rows
-            //console.log("TCL: getUserCartIdItemsResult", getUserCartIdItemsResult)
+            //update query
             const updateItem = await db.query(`update "cartItems" set "quantity"="quantity"+$1 where "cartId"=$2 and "pid"=$3;`,[res.locals.quantity,userCartId,item_id])
-            //console.log("TCL: updateItem", updateItem)
-
-            //get cart item
+            //get updated cart item
             const getAuthCartIdItem = await db.query(`select * from "cartItems" as ci join "products" as p on ci."productId"=p."id" join "images" as i on i."productId"=p."id" where "cartId"=$1  and ci."pid"=$2 and "type"=$3;`,[userCartId, item_id,'thumbnail'])
             const getAuthCartIdItemResult = getAuthCartIdItem.rows
-            console.log("TCL: getAuthCartIdItemResult", getAuthCartIdItemResult)
             const [{ updatedAt, cost, pid, name, productId, quantity, altText,file}] = getAuthCartIdItemResult
 
             //get cart totals
@@ -550,22 +543,38 @@ router.put('/items/:item_id', async (req, res, next) => {
             }
             const cartTokenCartId = getCartTokenCart.rows[0].id
             res.locals.cartId = cartTokenCartId
-            //get cart items
-            const getTokenCartIdItems = await db.query(`select * from "cartItems" as ci join "products" as p on ci."productId"=p."id" join "images" as i on i."productId"=p."id" where "cartId"=$1 and "type"=$2;`,[cartTokenCartId,'thumbnail'])
-            const getTokenCartIdItemsResult = getTokenCartIdItems.rows
-            //console.log("TCL: getUserCartIdItemsResult", getUserCartIdItemsResult)
+            //update query
+            const updateItem = await db.query(`update "cartItems" set "quantity"="quantity"+$1 where "cartId"=$2 and "pid"=$3;`,[res.locals.quantity,cartTokenCartId,item_id])
+            //get updated cart item
+            const getCartTokenCartIdItem = await db.query(`select * from "cartItems" as ci join "products" as p on ci."productId"=p."id" join "images" as i on i."productId"=p."id" where "cartId"=$1  and ci."pid"=$2 and "type"=$3;`,[cartTokenCartId, item_id,'thumbnail'])
+            const getCartTokenCartIdItemResult = getCartTokenCartIdItem.rows
+            const [{ updatedAt, cost, pid, name, productId, quantity, altText,file}] = getCartTokenCartIdItemResult
+
             //get cart totals
-            const getCartTotals = await db.query(`select sum(cost) as totalCost, sum(quantity) as totalQuantity from "cartItems" as ci join "products" as p on ci."productId"=p."id" where "cartId"=$1;`,[cartTokenCartId])
+            const getCartTotals = await db.query(`select sum(cost) as totalCost, sum(quantity) as totalQuantity from "cartItems" as ci join "products" as p on ci."productId"=p."id" where "cartId"=$1 and ci."pid"=$2;`,[cartTokenCartId,item_id])
             const getCartTotalsResult = getCartTotals.rows
             const [{ totalcost, totalquantity}] = getCartTotalsResult
-           
-             res.status(200).send(
-                {
+
+             res.status(200).send({
+                "cartId": cartPid,
+                added: updatedAt,
+                        each: cost,
+                        itemId: pid,
+                        name: name,
+                        productId: productId,
+                        quantity: quantity,
+                        thumbnail: {
+                            "altText": altText,
+                            "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
+                        },
+                        "total": quantity,
+    
                      total: {
                         "cost": parseInt(totalcost),
                         "items": parseInt(totalquantity)
                     }
-            })
+                
+                })
         }
     
 
