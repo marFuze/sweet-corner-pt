@@ -204,7 +204,7 @@ router.post('/items/:product_id', auth, async (req, res, next) => {
                         "quantity": quantity,
                         "thumbnail": {
                             "altText": res.locals.altText,
-                            "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${res.locals.file}]`
+                            "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${res.locals.file}`
                         },
                         "total": quantity * res.locals.cost
                     },
@@ -230,25 +230,44 @@ router.get('/', async (req, res, next) => {
 
         if(authToken){
             console.log('auth token triggered')
+            //decode auth token and get user pid, convert to user id
             const decodedTokenData = jwt.decode(authToken,jwtSecret)
                 const {uid} = decodedTokenData
                 const getUserId = await db.query(`select "id" from "users" where "pid"=$1;`,[uid])
                 const userId = getUserId.rows[0].id
-            //check for existing user cart
-            const checkForUserCarts = await db.query('select "id" from "carts" where "userId"=$1 and "statusId"=$2;',[userId, 2])
+            //check for existing user cart and get related cartItems
+            const checkForUserCarts = await db.query('select "id","pid" from "carts" where "userId"=$1 and "statusId"=$2;',[userId, 2])
             const userCartId = checkForUserCarts.rows[0].id
+            const userCartPid = checkForUserCarts.rows[0].pid
             res.locals.cartId = userCartId
-            const getUserCartIdItems = await db.query(`select * from "cartItems" where "cartId"=$1;`,[userCartId])
+            res.locals.cartPid = userCartPid
+            const getUserCartIdItems = await db.query(`select * from "cartItems" as ci join "products" as p on ci."productId"=p."id" join "images" as i on i."productId"=p."id" where "cartId"=$1 and "type"=$2;`,[userCartId,'thumbnail'])
             const getUserCartIdItemsResult = getUserCartIdItems.rows
             console.log("TCL: getUserCartIdItemsResult", getUserCartIdItemsResult)
 
             const authCartItems = getUserCartIdItemsResult.map( items => {
-                const  { id, pid, cartId, productId, quantity, createdAt} = items;
+                const  { pid, productId, quantity, createdAt, cost, name, altText, file } = items
      
                 return {
-                        "cart list": {
-                        "pid": pid
+                        "cartId": res.locals.cartPid,
+                        "items": [
+                    {
+                        "added": createdAt,
+                        "each": cost,
+                        "itemId": pid,
+                        "name": name,
+                        "productId": productId,
+                        "quantity": quantity,
+                        "thumbnail": {
+                            "altText": altText,
+                            "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
                         }
+                    }
+                    ],
+                    "total": {
+                        "cost": "",
+                        "items": ""
+                    }
                 }
              })
 
