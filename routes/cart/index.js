@@ -291,23 +291,46 @@ router.get('/', async (req, res, next) => {
             const decodedToken = jwt.decode(cartToken, jwtSecret);
             const {cartPid} = decodedToken;
             res.locals.tokenCartPid = cartPid;
+            //convert cart pid to id
             const getCartTokenCart = await db.query(`select * from "carts" where "pid"=$1`,[cartPid])
             const cartTokenCartId = getCartTokenCart.rows[0].id
             res.locals.cartId = cartTokenCartId
-            const getTokenCartIdItems = await db.query(`select * from "cartItems" where "cartId"=$1;`,[cartTokenCartId])
+            //get cart items
+            const getTokenCartIdItems = await db.query(`select * from "cartItems" as ci join "products" as p on ci."productId"=p."id" join "images" as i on i."productId"=p."id" where "cartId"=$1 and "type"=$2;`,[cartTokenCartId,'thumbnail'])
             const getTokenCartIdItemsResult = getTokenCartIdItems.rows
-            const tokenCartItems = getTokenCartIdItemsResult.map( items => {
-                const  { id, pid, cartId, productId, quantity, createdAt} = items;
+            //console.log("TCL: getUserCartIdItemsResult", getUserCartIdItemsResult)
+            //get cart totals
+            const getCartTotals = await db.query(`select sum(cost) as totalCost, sum(quantity) as totalQuantity from "cartItems" as ci join "products" as p on ci."productId"=p."id" where "cartId"=$1;`,[cartTokenCartId])
+            const getCartTotalsResult = getCartTotals.rows
+            const [{ totalcost, totalquantity}] = getCartTotalsResult
+            console.log("TCL: getCartTotalsResult", getCartTotalsResult)
+
+            const authCartItems = getTokenCartIdItemsResult.map( items => {
+                const  { pid, productId, quantity, createdAt, cost, name, altText, file } = items
      
                 return {
-                        "cart list": {
-                        "pid": pid
+        
+                        "added": createdAt,
+                        "each": cost,
+                        "itemId": pid,
+                        "name": name,
+                        "productId": productId,
+                        "quantity": quantity,
+                        "thumbnail": {
+                            "altText": altText,
+                            "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
                         }
                 }
              })
+
              res.status(200).send(
                 {
-                    cartId: tokenCartItems
+                    cartId: res.locals.cartPid,
+                    items: authCartItems,
+                     total: {
+                        cost: totalcost,
+                        items: totalquantity
+                    }
             })
         }
     }
