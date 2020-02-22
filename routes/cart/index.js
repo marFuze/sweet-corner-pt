@@ -229,13 +229,11 @@ router.get('/', async (req, res, next) => {
         
 
         if(authToken){
-            console.log('auth token triggered')
             //decode auth token and get user pid, convert to user id
             const decodedTokenData = jwt.decode(authToken,jwtSecret)
-                const {uid} = decodedTokenData
-                const getUserId = await db.query(`select "id" from "users" where "pid"=$1;`,[uid])
-                const userId = getUserId.rows[0].id
-                console.log("TCL: userId", userId)
+            const {uid} = decodedTokenData
+            const getUserId = await db.query(`select "id" from "users" where "pid"=$1;`,[uid])
+            const userId = getUserId.rows[0].id
             //check for existing user cart and get related cartItems
             const checkForUserCarts = await db.query('select "id","pid" from "carts" where "userId"=$1 and "statusId"=$2;',[userId, 2])
             const userCartId = checkForUserCarts.rows[0].id
@@ -244,12 +242,10 @@ router.get('/', async (req, res, next) => {
             res.locals.cartPid = userCartPid
             const getUserCartIdItems = await db.query(`select * from "cartItems" as ci join "products" as p on ci."productId"=p."id" join "images" as i on i."productId"=p."id" where "cartId"=$1 and "type"=$2;`,[userCartId,'thumbnail'])
             const getUserCartIdItemsResult = getUserCartIdItems.rows
-            //console.log("TCL: getUserCartIdItemsResult", getUserCartIdItemsResult)
             //get cart totals
             const getCartTotals = await db.query(`select sum(cost) as totalCost, sum(quantity) as totalQuantity from "cartItems" as ci join "products" as p on ci."productId"=p."id" where "cartId"=$1;`,[userCartId])
             const getCartTotalsResult = getCartTotals.rows
             const [{ totalcost, totalquantity}] = getCartTotalsResult
-            console.log("TCL: getCartTotalsResult", getCartTotalsResult)
 
             const authCartItems = getUserCartIdItemsResult.map( items => {
                 const  { pid, productId, quantity, createdAt, cost, name, altText, file } = items
@@ -279,10 +275,8 @@ router.get('/', async (req, res, next) => {
                         items: parseInt(totalquantity)
                     }
             })
-
         }
             if(cartToken){
-            console.log('cartToken triggered')
             const decodedToken = jwt.decode(cartToken, jwtSecret);
             const {cartPid} = decodedToken;
             res.locals.tokenCartPid = cartPid;
@@ -298,7 +292,6 @@ router.get('/', async (req, res, next) => {
             const getCartTotals = await db.query(`select sum(cost) as totalCost, sum(quantity) as totalQuantity from "cartItems" as ci join "products" as p on ci."productId"=p."id" where "cartId"=$1;`,[cartTokenCartId])
             const getCartTotalsResult = getCartTotals.rows
             const [{ totalcost, totalquantity}] = getCartTotalsResult
-            console.log("TCL: totalcost", totalcost)
             //console.log("TCL: getCartTotalsResult", getCartTotalsResult)
 
             const authCartItems = getTokenCartIdItemsResult.map( items => {
