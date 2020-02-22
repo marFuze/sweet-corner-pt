@@ -10,7 +10,9 @@
     "dev:startServer": "nodemon index.js",
     "dev:startClient": "npm run start --prefix client",
     "start": "concurrently 'npm run dev:*'",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "db:export": "pg_dump \"sweetCornerPt\" > db_dump.sql",
+    "db:import": "psql \"sweetCornerPt\" < db_dump.sql"
   },
   "keywords": [],
   "author": "",
