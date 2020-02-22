@@ -255,9 +255,7 @@ router.get('/', async (req, res, next) => {
                 const  { pid, productId, quantity, createdAt, cost, name, altText, file } = items
      
                 return {
-                        "cartId": res.locals.cartPid,
-                        "items": [
-                    {
+        
                         "added": createdAt,
                         "each": cost,
                         "itemId": pid,
@@ -268,18 +266,23 @@ router.get('/', async (req, res, next) => {
                             "altText": altText,
                             "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
                         }
-                    }
-                    ],
-                    "total": {
-                        "cost": totalcost,
-                        "items": totalquantity
-                    }
+                    
+                    // ],
+                    // "total": {
+                    //     "cost": totalcost,
+                    //     "items": totalquantity
+                    // }
                 }
              })
 
              res.status(200).send(
                 {
-                    cartId: authCartItems
+                    cartId: res.locals.cartPid,
+                    items: authCartItems,
+                     total: {
+                        cost: totalcost,
+                        items: totalquantity
+                    }
             })
 
         }
