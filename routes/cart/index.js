@@ -235,6 +235,7 @@ router.get('/', async (req, res, next) => {
                 const {uid} = decodedTokenData
                 const getUserId = await db.query(`select "id" from "users" where "pid"=$1;`,[uid])
                 const userId = getUserId.rows[0].id
+                console.log("TCL: userId", userId)
             //check for existing user cart and get related cartItems
             const checkForUserCarts = await db.query('select "id","pid" from "carts" where "userId"=$1 and "statusId"=$2;',[userId, 2])
             const userCartId = checkForUserCarts.rows[0].id
@@ -245,8 +246,10 @@ router.get('/', async (req, res, next) => {
             const getUserCartIdItemsResult = getUserCartIdItems.rows
             //console.log("TCL: getUserCartIdItemsResult", getUserCartIdItemsResult)
             //get cart totals
-            const getCartTotals = await db.query(`select sum(cost) as totalCost, sum(quantity) as totalQuantity from "cartItems" as ci join "products" as p on ci."productId"=p."id" where "cartId"=$1 group by ci."id";`,[userCartId])
+            const getCartTotals = await db.query(`select sum(cost) as totalCost, sum(quantity) as totalQuantity from "cartItems" as ci join "products" as p on ci."productId"=p."id" where "cartId"=$1;`,[userCartId])
             const getCartTotalsResult = getCartTotals.rows
+            const [{ totalcost, totalquantity}] = getCartTotalsResult
+            console.log("TCL: getCartTotalsResult", getCartTotalsResult)
 
             const authCartItems = getUserCartIdItemsResult.map( items => {
                 const  { pid, productId, quantity, createdAt, cost, name, altText, file } = items
@@ -268,8 +271,8 @@ router.get('/', async (req, res, next) => {
                     }
                     ],
                     "total": {
-                        "cost": "",
-                        "items": ""
+                        "cost": totalcost,
+                        "items": totalquantity
                     }
                 }
              })
