@@ -1,4 +1,4 @@
 module.exports = {
-    connectionString: `postgres://${processs.env.dbuser}:${process.env.dbpwd}@localhost/sweetCornerPt`
+    connectionString: 'postgres://dev:lfz@localhost/sweetCornerPt'
 
 }
