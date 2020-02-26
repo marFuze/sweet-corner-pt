@@ -3,5 +3,7 @@ node_modules
 .vscode
 .DS_Store
 
-config/*.js
-config/*.json
+//config/*.js
+//not needed config/*.json
+.env
+

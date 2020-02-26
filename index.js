@@ -1,3 +1,5 @@
+const dotenv = require('dotenv').config()
+console.log(process.env.TESTDOTENV)
 const express = require('express');
 
 const { routes } = require('./routes');
