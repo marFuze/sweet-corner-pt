@@ -652,17 +652,21 @@ router.delete('/items/:item_id', async (req, res, next) => {
             const cartTokenCartId = getCartTokenCart.rows[0].id
             res.locals.cartId = cartTokenCartId
             //delete query
-            const deleteCartTokenCartItem = await db.query(`delete from "cartItems" where "cartId"=$1 and "pid"=$2 returning *;`,[cartTokenCartId,item_id])
-            console.log("TCL: deleteCartTokenCartItem", deleteCartTokenCartItem)
+            const deleteItem = await db.query(`delete from "cartItems" where "cartId"=$1 and "pid"=$2 returning *;`,[cartTokenCartId,item_id])
+            console.log("TCL: deleteItem", deleteItem.rows[0])
+            const { quantity, productId } = deleteItem.rows[0]
+            //get product cost
+            const getProductCost = await db.query('select "name","cost"from "products" where "id"=$1;',[productId])
+            const {cost, name} = getProductCost.rows[0]
             
-            conso
              res.status(200).send({
                 "cartId": cartPid,
-                "message": "Removed all Purple Dream items from cart"
-                // "total": {
-                //     "cost": 1200,
-                //     "items": 2
-                // }
+                "message":`Removed all ${name} items from cart`,
+                "total": {
+                    "cost": quantity * cost,
+                    "items": quantity
+                }
+
                 })
     }
 
