@@ -464,8 +464,7 @@ router.put('/items/:item_id', async (req, res, next) => {
     const { item_id } = req.params
     const { quantity } = req.body
     res.locals.quantity = quantity
-    //console.log("TCL: quantity", quantity)
-    //console.log("TCL: quantity", quantity)
+
     try {
 
         if(authToken){
@@ -584,7 +583,96 @@ router.put('/items/:item_id', async (req, res, next) => {
     }
 })
 
+router.delete('/items/:item_id', async (req, res, next) => {
+    const authToken = req.headers.authorization
+    const cartToken = req.headers['x-cart-token']
+    const { item_id } = req.params
+   
 
+    try {
+
+        if(authToken){
+            //decode auth token and get user pid, convert to user id
+            const decodedTokenData = jwt.decode(authToken,jwtSecret)
+            const {uid} = decodedTokenData
+            const getUserId = await db.query(`select "id" from "users" where "pid"=$1;`,[uid])
+            const userId = getUserId.rows[0].id
+            //check for existing user cart and get related cartItems
+            const checkForUserCarts = await db.query('select "id","pid" from "carts" where "userId"=$1 and "statusId"=$2;',[userId, 2])
+            if(!checkForUserCarts){
+
+                res.status(404).send(
+                    {
+                        "cartId": null,
+                        "message": "No active cart"
+                    }
+                )
+                return
+            }
+            const userCartId = checkForUserCarts.rows[0].id
+            const userCartPid = checkForUserCarts.rows[0].pid
+            res.locals.cartId = userCartId
+            res.locals.cartPid = userCartPid
+            //delete query
+            const deleteItem = await db.query(`delete from "cartItems" where "cartId"=$1 and "pid"=$2 returning *;`,[userCartId,item_id])
+            console.log("TCL: deleteItem", deleteItem.rows[0])
+            const { quantity, productId } = deleteItem.rows[0]
+            //get product cost
+            const getProductCost = await db.query('select "name","cost"from "products" where "id"=$1;',[productId])
+            const {cost, name} = getProductCost.rows[0]
+            
+
+             res.status(200).send({
+                "cartId": userCartPid,
+                "message":`Removed all ${name} items from cart`,
+                "total": {
+                    "cost": quantity * cost,
+                    "items": quantity
+                }
+
+                })
+            }
+       
+            if(cartToken){
+            const decodedToken = jwt.decode(cartToken, jwtSecret);
+            const {cartPid} = decodedToken;
+            res.locals.tokenCartPid = cartPid;
+            //convert cart pid to id
+            const getCartTokenCart = await db.query(`select * from "carts" where "pid"=$1`,[cartPid])
+            if(!getCartTokenCart){
+
+                res.status(404).send(
+                    {
+                        "cartId": null,
+                        "message": "No active cart"
+                    }
+                )
+                return
+            }
+            const cartTokenCartId = getCartTokenCart.rows[0].id
+            res.locals.cartId = cartTokenCartId
+            //delete query
+            const deleteCartTokenCartItem = await db.query(`delete from "cartItems" where "cartId"=$1 and "pid"=$2 returning *;`,[cartTokenCartId,item_id])
+            console.log("TCL: deleteCartTokenCartItem", deleteCartTokenCartItem)
+            
+            conso
+             res.status(200).send({
+                "cartId": cartPid,
+                "message": "Removed all Purple Dream items from cart"
+                // "total": {
+                //     "cost": 1200,
+                //     "items": 2
+                // }
+                })
+    }
+
+
+}
+
+    catch(err){
+        next(err)
+    }
+})
 
 
 
