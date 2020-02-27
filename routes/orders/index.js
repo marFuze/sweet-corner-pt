@@ -1,5 +1,9 @@
 const express = require('express');
 const router = express.Router();
+const {db} = require('../../db');
+const jwt = require('jwt-simple');
+const { jwtSecret } = require('../../config/jwt');
+const auth = require('../../middleware/auth');
 
 //get all user's orders
 
@@ -69,6 +73,7 @@ router.post('/', async (req, res, next) => {
 
 router.post('/guest', async (req, res, next) => {
     const cartToken = req.headers['x-cart-token']
+    const { email, firstName, lastName } = req.body
     try{
         if(cartToken){
             const decodedToken = jwt.decode(cartToken, jwtSecret);
@@ -88,6 +93,32 @@ router.post('/guest', async (req, res, next) => {
             }
             const cartTokenCartId = getCartTokenCart.rows[0].id
             res.locals.cartId = cartTokenCartId
+            
+
+
+            //get cart items
+            const getTokenCartIdItems = await db.query(`select * from "cartItems" as ci join "products" as p on ci."productId"=p."id" join "images" as i on i."productId"=p."id" where "cartId"=$1 and "type"=$2;`,[cartTokenCartId,'thumbnail'])
+            const getTokenCartIdItemsResult = getTokenCartIdItems.rows
+            //get cart totals
+            const getCartTotals = await db.query(`select sum(cost) as totalCost, sum(quantity) as totalQuantity from "cartItems" as ci join "products" as p on ci."productId"=p."id" where "cartId"=$1;`,[cartTokenCartId])
+            const getCartTotalsResult = getCartTotals.rows
+            const [{ totalcost, totalquantity}] = getCartTotalsResult
+
+            //insert new guest order
+            const createGuestOrder = await db.query(`insert into "orders" ("pid","itemCount", "total", "cartId", "guestId", "statusId" ) values (uuid_generate_v4(),$1,$2,$3,$4,$5) returning "id";`,[itemCount, total, cartId, 1, statusId])
+
+
+            const newOrderItems = getTokenCartIdItemsResult.map ( async (items) => {
+                const  { pid, productId, quantity, createdAt, cost, name, altText, file } = items
+
+                await db.query(`insert into "orderItems" ("each", "quantity", "orderId", "productId") VALUES ($1,$2,$3,$4);`,[cost, quantity, newOrderId, productId])
+                
+             })
+    
+            res.send({
+                "message": "Your order has been placed",
+                "id": ""
+            })
     }
 }
     catch(err){
