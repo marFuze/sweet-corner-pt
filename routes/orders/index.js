@@ -30,7 +30,7 @@ router.get('/', async (req, res, next) => {
 
 //get order details
 
-router.get('/:order_id', (req, res, next) => {
+router.get('/:order_id', async (req, res, next) => {
     const authToken = req.headers.authorization
 
     try{
@@ -48,7 +48,7 @@ catch(err){
 })
 
 //create new order
-router.post('/', (req, res, next) => {
+router.post('/', async (req, res, next) => {
     const authToken = req.headers.authorization
 
     try{
@@ -67,7 +67,7 @@ router.post('/', (req, res, next) => {
 
 //create new guest order
 
-router.post('/guest', (req, res, next) => {
+router.post('/guest', async (req, res, next) => {
     const cartToken = req.headers['x-cart-token']
     try{
         if(cartToken){
@@ -97,9 +97,8 @@ router.post('/guest', (req, res, next) => {
 
 //get guest order details
 
-router.get('/guest/:order_id', (req, res, next) => {
+router.get('/guest/:order_id', async (req, res, next) => {
     try{
-
     }
     catch(err){
         next(err)
