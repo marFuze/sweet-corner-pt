@@ -140,7 +140,7 @@ export function createGuestOrder(guest){
                 }
             }
 
-            const resp = await axios.post(BASE_URL + '/api/orders/guest', guest, axiosConfig);
+            const resp = await axios.post('/api/orders/guest', guest, axiosConfig);
             localStorage.removeItem('sc-cart-token');
 
             dispatch({
@@ -166,7 +166,7 @@ export function getGuestOrderDetails(orderId, email){
     return async function (dispatch) {
         try {
     
-            const resp = await axios.get(BASE_URL + '/api/orders/guest/' + orderId + '?email=' + email);
+            const resp = await axios.get('/api/orders/guest/' + orderId + '?email=' + email);
             
             dispatch({
                 type:types.GET_GUEST_ORDER_DETAILS,
