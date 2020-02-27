@@ -74,6 +74,7 @@ router.post('/', async (req, res, next) => {
 router.post('/guest', async (req, res, next) => {
     const cartToken = req.headers['x-cart-token']
     const { email, firstName, lastName } = req.body
+    console.log("TCL: email", email)
     try{
         if(cartToken){
             const decodedToken = jwt.decode(cartToken, jwtSecret);
@@ -102,22 +103,37 @@ router.post('/guest', async (req, res, next) => {
             //get cart totals
             const getCartTotals = await db.query(`select sum(cost) as totalCost, sum(quantity) as totalQuantity from "cartItems" as ci join "products" as p on ci."productId"=p."id" where "cartId"=$1;`,[cartTokenCartId])
             const getCartTotalsResult = getCartTotals.rows
+            console.log("TCL: getCartTotalsResult", getCartTotalsResult)
             const [{ totalcost, totalquantity}] = getCartTotalsResult
-
+            console.log("TCL: totalquantity", totalquantity)
+        
             //insert new guest order
-            const createGuestOrder = await db.query(`insert into "orders" ("pid","itemCount", "total", "cartId", "guestId", "statusId" ) values (uuid_generate_v4(),$1,$2,$3,$4,$5) returning "id";`,[itemCount, total, cartId, 1, statusId])
+            const createGuestOrder = await db.query(`insert into "orders" ("pid","itemCount", "total", "cartId", "guestId", "statusId" ) values (uuid_generate_v4(),$1,$2,$3,$4,$5) returning "id";`,[totalquantity, totalcost, cartTokenCartId, 1, 1])
+            console.log("TCL: createGuestOrder", createGuestOrder)
+            const [{ id }] = createGuestOrder.rows
+            console.log("TCL: id", id)
+            const newOrderId = id
 
-
-            const newOrderItems = getTokenCartIdItemsResult.map ( async (items) => {
+            const newOrderItems = getTokenCartIdItemsResult.forEach (
+                
+                async (items) => {
+                    try{
                 const  { pid, productId, quantity, createdAt, cost, name, altText, file } = items
 
                 await db.query(`insert into "orderItems" ("each", "quantity", "orderId", "productId") VALUES ($1,$2,$3,$4);`,[cost, quantity, newOrderId, productId])
-                
+                }
+                catch(err){
+                    next(err)
+                }
              })
+
+
+
+            console.log("TCL: newOrderItems", newOrderItems)
     
             res.send({
                 "message": "Your order has been placed",
-                "id": ""
+                "id": newOrderId
             })
     }
 }
