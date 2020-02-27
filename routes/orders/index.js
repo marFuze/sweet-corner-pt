@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 
+//get all user's orders
+
 router.get('/', async (req, res, next) => {
     const authToken = req.headers.authorization
 
@@ -26,6 +28,7 @@ router.get('/', async (req, res, next) => {
     }
 })
 
+//get order details
 
 router.get('/:order_id', (req, res, next) => {
     const authToken = req.headers.authorization
@@ -44,6 +47,7 @@ catch(err){
 }
 })
 
+//create new order
 router.post('/', (req, res, next) => {
     const authToken = req.headers.authorization
 
