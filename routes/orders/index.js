@@ -61,4 +61,45 @@ router.post('/', (req, res, next) => {
     }
 })
 
+//create new guest order
+
+router.post('/guest', (req, res, next) => {
+    const cartToken = req.headers['x-cart-token']
+    try{
+        if(cartToken){
+            const decodedToken = jwt.decode(cartToken, jwtSecret);
+            const {cartPid} = decodedToken;
+            res.locals.tokenCartPid = cartPid;
+            //convert cart pid to id
+            const getCartTokenCart = await db.query(`select * from "carts" where "pid"=$1`,[cartPid])
+            if(!getCartTokenCart){
+
+                res.status(404).send(
+                    {
+                        "cartId": null,
+                        "message": "No active cart"
+                    }
+                )
+                return
+            }
+            const cartTokenCartId = getCartTokenCart.rows[0].id
+            res.locals.cartId = cartTokenCartId
+    }
+}
+    catch(err){
+        next(err)
+    }
+})
+
+//get guest order details
+
+router.get('/guest/:order_id', (req, res, next) => {
+    try{
+
+    }
+    catch(err){
+        next(err)
+    }
+})
+
 module.exports = router;
