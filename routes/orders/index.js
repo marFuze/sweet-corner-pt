@@ -147,22 +147,55 @@ router.post('/guest', async (req, res, next) => {
 
 router.get('/guest/:order_id', async (req, res, next) => { 
     const { email } = req.query
-    const { order_id } = req.body
+    const { order_id } = req.params
+    console.log("TCL: order_id", order_id)
 
     try {
 
         const getOrder = await db.query(`select * from "orders" where "pid"=$1;`,[order_id])
-        console.log("TCL: getOrder", getOrder)
 
-        //const [{ itemCount, pid, total, createdAt, statusId }] = getOrder.rows
+        const [{ id, itemCount, pid, total, createdAt, statusId }] = getOrder.rows
+
+        //get order items
+
+        const getGuestOrderItems = await db.query(`select * from "orderItems" as oi join "products" as p on oi."productId"=p."id" join "images" as i on i."productId"=p."id" where "orderId"=$1 and "type"=$2;`,[id,'thumbnail'])
+            const getGuestOrderItemsResult = getGuestOrderItems.rows
+        const guestOrderItems = getGuestOrderItemsResult.map( items => {
+            const  { pid, quantity, createdAt, cost, name, altText, file } = items
+ 
+            return {
     
+                    "each": cost,
+                    "quantity": quantity,
+                    "total": cost,
+                    "id": pid,
+                    "product": {
+                        "name": name,
+                        "id": pid,
+                        "thumbnail": {
+                            "altText": altText,
+                            "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
+                        }, 
+                    }
+            }
+         })
+
+        //console.log("TCL: itemCount, pid, total, createdAt, statusId", itemCount, pid, total, createdAt, statusId)
+        res.send({
+            "itemCount": itemCount,
+            "total": total,
+            "createdAt": createdAt,
+            "id": pid,
+            "status": "Pending",
+            "items": guestOrderItems
+        })
 
     }
     catch(err){
         next(err)
     }
 
-    res.send({email: email})
+    
 })
 
 module.exports = router;
