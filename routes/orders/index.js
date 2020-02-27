@@ -93,6 +93,7 @@ router.post('/guest', async (req, res, next) => {
                 return
             }
             const cartTokenCartId = getCartTokenCart.rows[0].id
+            console.log("TCL: cartTokenCartId", cartTokenCartId)
             res.locals.cartId = cartTokenCartId
             
 
@@ -120,7 +121,7 @@ router.post('/guest', async (req, res, next) => {
                     try{
                 const  { pid, productId, quantity, createdAt, cost, name, altText, file } = items
 
-                await db.query(`insert into "orderItems" ("each", "quantity", "orderId", "productId") VALUES ($1,$2,$3,$4);`,[cost, quantity, newOrderId, productId])
+                await db.query(`insert into "orderItems" ("each", "quantity", "orderId", "productId") VALUES ($1,$2,$3,$4) returning *;`,[cost, quantity, newOrderId, productId])
                 }
                 catch(err){
                     next(err)
@@ -144,12 +145,24 @@ router.post('/guest', async (req, res, next) => {
 
 //get guest order details
 
-router.get('/guest/:order_id', async (req, res, next) => {
-    try{
+router.get('/guest/:order_id', async (req, res, next) => { 
+    const { email } = req.query
+    const { order_id } = req.body
+
+    try {
+
+        const getOrder = await db.query(`select * from "orders" where "pid"=$1;`,[order_id])
+        console.log("TCL: getOrder", getOrder)
+
+        //const [{ itemCount, pid, total, createdAt, statusId }] = getOrder.rows
+    
+
     }
     catch(err){
         next(err)
     }
+
+    res.send({email: email})
 })
 
 module.exports = router;
