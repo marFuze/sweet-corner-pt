@@ -106,14 +106,19 @@ router.post('/guest', async (req, res, next) => {
             const getCartTotalsResult = getCartTotals.rows
             console.log("TCL: getCartTotalsResult", getCartTotalsResult)
             const [{ totalcost, totalquantity}] = getCartTotalsResult
-            console.log("TCL: totalquantity", totalquantity)
+            //console.log("TCL: totalquantity", totalquantity)
         
             //insert new guest order
-            const createGuestOrder = await db.query(`insert into "orders" ("pid","itemCount", "total", "cartId", "guestId", "statusId" ) values (uuid_generate_v4(),$1,$2,$3,$4,$5) returning "id";`,[totalquantity, totalcost, cartTokenCartId, 1, 1])
-            console.log("TCL: createGuestOrder", createGuestOrder)
-            const [{ id }] = createGuestOrder.rows
-            console.log("TCL: id", id)
+            const createGuestOrder = await db.query(`insert into "orders" ("pid","itemCount", "total", "cartId", "guestId", "statusId" ) values (uuid_generate_v4(),$1,$2,$3,$4,$5) returning "id","pid";`,[totalquantity, totalcost, cartTokenCartId, 1, 1])
+            //console.log("TCL: createGuestOrder", createGuestOrder)
+            const [{ id, pid }] = createGuestOrder.rows
+            console.log("TCL: id,pid", id, pid)
             const newOrderId = id
+            const newOrderPid = pid
+            res.locals.newOrderPid = newOrderPid
+            res.locals.newOrderId = newOrderId
+            console.log("TCL: res.locals.newOrderId", res.locals.newOrderId)
+            console.log("TCL: res.locals.newOrderPid", res.locals.newOrderPid)
 
             const newOrderItems = getTokenCartIdItemsResult.forEach (
                 
@@ -121,7 +126,7 @@ router.post('/guest', async (req, res, next) => {
                     try{
                 const  { pid, productId, quantity, createdAt, cost, name, altText, file } = items
 
-                await db.query(`insert into "orderItems" ("each", "quantity", "orderId", "productId") VALUES ($1,$2,$3,$4) returning *;`,[cost, quantity, newOrderId, productId])
+                await db.query(`insert into "orderItems" ("each", "quantity", "orderId", "productId") VALUES ($1,$2,$3,$4) returning *;`,[cost, quantity, res.locals.newOrderId, productId])
                 }
                 catch(err){
                     next(err)
@@ -134,7 +139,7 @@ router.post('/guest', async (req, res, next) => {
     
             res.send({
                 "message": "Your order has been placed",
-                "id": newOrderId
+                "id": res.locals.newOrderPid
             })
     }
 }
@@ -158,20 +163,20 @@ router.get('/guest/:order_id', async (req, res, next) => {
 
         //get order items
 
-        const getGuestOrderItems = await db.query(`select * from "orderItems" as oi join "products" as p on oi."productId"=p."id" join "images" as i on i."productId"=p."id" where "orderId"=$1 and "type"=$2;`,[id,'thumbnail'])
+        const getGuestOrderItems = await db.query(`select oi."pid" as "orderItemPid", quantity, cost, p."name" as "productName", p."pid" as "productPid", "altText", "file" from "orderItems" as oi join "products" as p on oi."productId"=p."id" join "images" as i on i."productId"=p."id" where "orderId"=$1 and "type"=$2;`,[id,'thumbnail'])
             const getGuestOrderItemsResult = getGuestOrderItems.rows
         const guestOrderItems = getGuestOrderItemsResult.map( items => {
-            const  { pid, quantity, createdAt, cost, name, altText, file } = items
+            const  { orderItemPid, quantity, cost, productName, productPid, altText, file } = items
  
             return {
     
                     "each": cost,
                     "quantity": quantity,
                     "total": cost,
-                    "id": pid,
+                    "id": orderItemPid,
                     "product": {
-                        "name": name,
-                        "id": pid,
+                        "name": productName,
+                        "id": productPid,
                         "thumbnail": {
                             "altText": altText,
                             "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
