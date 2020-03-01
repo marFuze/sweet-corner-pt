@@ -127,11 +127,62 @@ router.post('/', async (req, res, next) => {
         const {uid} = decodedTokenData
         const getUserId = await db.query(`select "id" from "users" where "pid"=$1;`,[uid])
         const userId = getUserId.rows[0].id
-    }
+
+        //check for existing user cart
+
+        const checkForUserCarts = await db.query('select "id" from "carts" where "userId"=$1 and "statusId"=$2;',[userId, 2])
+        //console.log("TCL: checkForUserCarts", checkForUserCarts)
+        const userCartId = checkForUserCarts.rows[0].id
+        console.log("TCL: userCartId", userCartId)
+
+        //get cart items
+        const getUserCartIdItems = await db.query(`select * from "cartItems" as ci join "products" as p on ci."productId"=p."id" join "images" as i on i."productId"=p."id" where "cartId"=$1 and "type"=$2;`,[userCartId,'thumbnail'])
+        const getUserCartIdItemsResult = getUserCartIdItems.rows
+        //get cart totals
+        const getCartTotals = await db.query(`select sum(cost) as totalCost, sum(quantity) as totalQuantity from "cartItems" as ci join "products" as p on ci."productId"=p."id" where "cartId"=$1;`,[userCartId])
+        const getCartTotalsResult = getCartTotals.rows
+        console.log("TCL: getCartTotalsResult", getCartTotalsResult)
+        const [{ totalcost, totalquantity}] = getCartTotalsResult
+        //console.log("TCL: totalquantity", totalquantity)
+    
+        //insert new user order
+        const createUserOrder = await db.query(`insert into "orders" ("pid","itemCount", "total", "cartId", "guestId", "statusId","userId") values (uuid_generate_v4(),$1,$2,$3,$4,$5,$6) returning "id","pid";`,[totalquantity, totalcost, userCartId, 1, 1,userId])
+        //console.log("TCL: createGuestOrder", createGuestOrder)
+        const [{ id, pid }] = createUserOrder.rows
+        console.log("TCL: id,pid", id, pid)
+        const newOrderId = id
+        const newOrderPid = pid
+        res.locals.newOrderPid = newOrderPid
+        res.locals.newOrderId = newOrderId
+        console.log("TCL: res.locals.newOrderId", res.locals.newOrderId)
+        console.log("TCL: res.locals.newOrderPid", res.locals.newOrderPid)
+
+        const newOrderItems = getUserCartIdItemsResult.forEach (
+            
+            async (items) => {
+                try{
+            const  { pid, productId, quantity, createdAt, cost, name, altText, file } = items
+
+            await db.query(`insert into "orderItems" ("each", "quantity", "orderId", "productId") VALUES ($1,$2,$3,$4) returning *;`,[cost, quantity, res.locals.newOrderId, productId])
+        }
+        catch(err){
+            next(err)
+        }
+     })
+
+
+
+    console.log("TCL: newOrderItems", newOrderItems)
+
+    res.send({
+        "message": "Your order has been placed",
+        "id": res.locals.newOrderPid
+    })
 }
-    catch(err){
-        next(err)
-    }
+}
+catch(err){
+next(err)
+}
 })
 
 //create new guest order
