@@ -15,15 +15,29 @@ router.get('/', async (req, res, next) => {
         //decode auth token and get user pid, convert to user id
         const decodedTokenData = jwt.decode(authToken,jwtSecret)
         const {uid} = decodedTokenData
+        console.log("TCL: uid", uid)
         const getUserId = await db.query(`select "id" from "users" where "pid"=$1;`,[uid])
         const userId = getUserId.rows[0].id
+        console.log("TCL: userId", userId)
 
-        const getOrders = await db.query(`select * from "orders" where "userId"=$1;`,[userId])
+        const getOrders = await db.query(`select "itemCount", "total", o."createdAt" as "orderCreatedAt", o."pid" as "orderPid", "name" as "orderStatusName" from "orders" as o join "orderStatuses" as os on o."statusId"=os."id";`)
 
-        const ordersResult = getOrders.rows[0]
+        const ordersResult = getOrders.rows
         console.log("TCL: ordersResult", ordersResult)
         
-        res.send({message: 'from get all orders'});
+        const userOrders = ordersResult.map(order => {
+            const { itemCount, total, orderCreatedAt, orderPid, orderStatusName } = order
+
+            return {
+                "itemCount": itemCount,
+                "total": total,
+                "createdAt": orderCreatedAt,
+                "id": orderPid,
+                "status": orderStatusName
+                            }
+        })
+        res.send({orders: userOrders});
+
     }
 }
 
@@ -202,5 +216,7 @@ router.get('/guest/:order_id', async (req, res, next) => {
 
     
 })
+
+
 
 module.exports = router;
