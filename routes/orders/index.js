@@ -20,7 +20,7 @@ router.get('/', async (req, res, next) => {
         const userId = getUserId.rows[0].id
         console.log("TCL: userId", userId)
 
-        const getOrders = await db.query(`select "itemCount", "total", o."createdAt" as "orderCreatedAt", o."pid" as "orderPid", "name" as "orderStatusName" from "orders" as o join "orderStatuses" as os on o."statusId"=os."id";`)
+        const getOrders = await db.query(`select "itemCount", "total", o."createdAt" as "orderCreatedAt", o."pid" as "orderPid", "name" as "orderStatusName" from "orders" as o join "orderStatuses" as os on o."statusId"=os."id" where "userId"=$1;`,[userId])
 
         const ordersResult = getOrders.rows
         console.log("TCL: ordersResult", ordersResult)
@@ -50,6 +50,7 @@ router.get('/', async (req, res, next) => {
 
 router.get('/:order_id', async (req, res, next) => {
     const authToken = req.headers.authorization
+    const { order_id } = req.params
 
     try{
     if(authToken){
@@ -58,6 +59,56 @@ router.get('/:order_id', async (req, res, next) => {
         const {uid} = decodedTokenData
         const getUserId = await db.query(`select "id" from "users" where "pid"=$1;`,[uid])
         const userId = getUserId.rows[0].id
+        console.log("TCL: userId", userId)
+
+        const getOrder = await db.query(`select * from "orders" where "pid"=$1 and "userId"=$2;`,[order_id,userId])
+        console.log("TCL: getOrder", getOrder)
+        if(getOrder.rows == undefined || getOrder.rows.length == 0){
+
+            res.status(404).send(
+                {
+                    "cartId": null,
+                    "message": "No active order"
+                }
+            )
+            return
+        }
+        {const [{ id, itemCount, pid, total, createdAt, statusId }] = getOrder.rows
+
+        //get order items
+
+        const getUserOrderItems = await db.query(`select oi."pid" as "orderItemPid", quantity, cost, p."name" as "productName", p."pid" as "productPid", "altText", "file" from "orderItems" as oi join "products" as p on oi."productId"=p."id" join "images" as i on i."productId"=p."id" where "orderId"=$1 and "type"=$2;`,[id,'thumbnail'])
+            const getUserOrderItemsResult = getUserOrderItems.rows
+        const userOrderItems = getUserOrderItemsResult.map( items => {
+            const  { orderItemPid, quantity, cost, productName, productPid, altText, file } = items
+ 
+            return {
+    
+                    "each": cost,
+                    "quantity": quantity,
+                    "total": cost,
+                    "id": orderItemPid,
+                    "product": {
+                        "name": productName,
+                        "id": productPid,
+                        "thumbnail": {
+                            "altText": altText,
+                            "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
+                        }, 
+                    }
+            }
+         })
+
+        //console.log("TCL: itemCount, pid, total, createdAt, statusId", itemCount, pid, total, createdAt, statusId)
+        res.send({
+            "itemCount": itemCount,
+            "total": total,
+            "createdAt": createdAt,
+            "id": pid,
+            "status": "Pending",
+            "items": userOrderItems
+        })
+    }
     }
 }
 catch(err){
