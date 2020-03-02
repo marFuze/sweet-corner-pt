@@ -64,6 +64,7 @@ router.get('/:product', async (req, res, next) => {
                     file: file,
                     type: "thumbnails",
                     url: `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
+                    //update path with local path
                 }
             }
         });
