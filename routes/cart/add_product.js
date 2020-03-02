@@ -1,4 +1,6 @@
 const {db} = require('../../db');
+const jwt = require('jwt-simple');
+const { jwtSecret } = require('../../config/jwt');
 
 module.exports = async (req, res, next) => {
     const {quantity} = req.body;

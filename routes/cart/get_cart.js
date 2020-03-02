@@ -1,4 +1,5 @@
-const db = require('../../db')
+const {db} = require('../../db')
+const { convertCartPidToId, getCartItems, getCartTotals} = require('./get_cart_items.js')
 
 module.exports = async (req, res, next) => {
 
@@ -16,7 +17,7 @@ module.exports = async (req, res, next) => {
         }
         
 
-        if(authToken){
+        if(res.locals.userId){
            
             //check for existing user cart and get related cartItems
             const checkForUserCarts = await db.query('select "id","pid" from "carts" where "userId"=$1 and "statusId"=$2;',[userId, 2])
@@ -34,10 +35,11 @@ module.exports = async (req, res, next) => {
             const userCartPid = checkForUserCarts.rows[0].pid
             res.locals.cartId = userCartId
             res.locals.cartPid = userCartPid
-            const getUserCartIdItems = await db.query(`select * from "cartItems" as ci join "products" as p on ci."productId"=p."id" join "images" as i on i."productId"=p."id" where "cartId"=$1 and "type"=$2;`,[userCartId,'thumbnail'])
+            //get cart Items
+            const getUserCartIdItems = await getCartItems(userCartId)
             const getUserCartIdItemsResult = getUserCartIdItems.rows
             //get cart totals
-            const getCartTotals = await db.query(`select sum(cost) as totalCost, sum(quantity) as totalQuantity from "cartItems" as ci join "products" as p on ci."productId"=p."id" where "cartId"=$1;`,[userCartId])
+            const getCartTotals = await getCartTotals(userCartId)
             const getCartTotalsResult = getCartTotals.rows
             const [{ totalcost, totalquantity}] = getCartTotalsResult
 
@@ -70,13 +72,14 @@ module.exports = async (req, res, next) => {
                     }
             })
         }
-            if(cartToken){
-            const decodedToken = jwt.decode(cartToken, jwtSecret);
-            const {cartPid} = decodedToken;
-            res.locals.tokenCartPid = cartPid;
+            if(res.locals.cartTokenPid){
+                console.log("res.locals.cartTokenPid", res.locals.cartTokenPid)
+                console.log('cart token triggered')
             //convert cart pid to id
-            const getCartTokenCart = await db.query(`select * from "carts" where "pid"=$1`,[cartPid])
-            if(!getCartTokenCart){
+            const cartId = await convertCartPidToId(res.locals.cartTokenPid)
+            console.log("cartId", cartId)
+        
+            if(!cartId){
 
                 res.status(404).send(
                     {
@@ -86,19 +89,14 @@ module.exports = async (req, res, next) => {
                 )
                 return
             }
-            const cartTokenCartId = getCartTokenCart.rows[0].id
-            res.locals.cartId = cartTokenCartId
+            res.locals.cartId = cartId
             //get cart items
-            const getTokenCartIdItems = await db.query(`select * from "cartItems" as ci join "products" as p on ci."productId"=p."id" join "images" as i on i."productId"=p."id" where "cartId"=$1 and "type"=$2;`,[cartTokenCartId,'thumbnail'])
-            const getTokenCartIdItemsResult = getTokenCartIdItems.rows
-            //console.log("TCL: getUserCartIdItemsResult", getUserCartIdItemsResult)
+            const getItemsResult  = await getCartItems(res.locals.cartId)
+            
             //get cart totals
-            const getCartTotals = await db.query(`select sum(cost) as totalCost, sum(quantity) as totalQuantity from "cartItems" as ci join "products" as p on ci."productId"=p."id" where "cartId"=$1;`,[cartTokenCartId])
-            const getCartTotalsResult = getCartTotals.rows
-            const [{ totalcost, totalquantity}] = getCartTotalsResult
-            //console.log("TCL: getCartTotalsResult", getCartTotalsResult)
-
-            const authCartItems = getTokenCartIdItemsResult.map( items => {
+            const getTotalsResult  = await getCartTotals(res.locals.cartId)
+            
+            const authCartItems = getItemsResult.map( items => {
                 const  { pid, productId, quantity, createdAt, cost, name, altText, file } = items
      
                 return {
@@ -122,8 +120,8 @@ module.exports = async (req, res, next) => {
                     cartId: res.locals.cartPid,
                     items: authCartItems,
                      total: {
-                        "cost": parseInt(totalcost),
-                        "items": parseInt(totalquantity)
+                        "cost": parseInt(getTotalsResult.totalCost),
+                        "items": parseInt(getTotalsResult.totalQuantity)
                     }
             })
         }
