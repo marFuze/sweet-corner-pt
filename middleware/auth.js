@@ -4,28 +4,35 @@ const ApiError = require('../lib/api_error');
 const db = require('../db');
 
 module.exports = async (req, res, next) => {
-  // Get token from request headers, header name should be "access-token"
+
+  const authToken = req.headers.authorization
   const cartToken = req.headers['x-cart-token'];
-  //console.log("TCL: cartToken", cartToken)
+
   try {
-   
-    // next() if no access-token
-   if (!cartToken || cartToken.indexOf('Object') > -1){
+    //if no auth or cart token stop
+    if((!authToken || authToken.indexOf('Object') > -1) && (!cartToken || cartToken.indexOf('Object') > -1)){
+      
         next();
         return;
-   }
+    }
 
-    // Use jwt to decode the token
-
-    const decodedToken = jwt.decode(cartToken, jwtSecret);
+    // get user id from auth token
+    if(authToken) {
+      const {uid} = jwt.decode(authToken.jwtSecret)
+      const getUserId = await db.query(`select "id" from "users" where "pid"=$1;`,[uid])
+      res.locals.userId = getUserId.rows[0].id
+      next()
+    }
     
-    const {cartPid} = decodedToken;
-
-    res.locals.tokenCartPid = cartPid;
-    res.locals.existingToken = cartToken;
+    //get cart pid from cart token
+    if(cartToken) {
+      const {cartPid} = jwt.decode(cartToken, jwtSecret)
+      res.locals.cartTokenPid = cartPid;
+      res.locals.existingToken = cartToken;
 
     // Go to the next thing...
     next();
+    }
   } catch (error) {
     next(error);
   }
