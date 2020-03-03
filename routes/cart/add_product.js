@@ -1,61 +1,61 @@
 const {db} = require('../../db');
 const jwt = require('jwt-simple');
 const { jwtSecret } = require('../../config/jwt');
+const {convertCartPidToId, convertProductPidToId} = require('../../utility/pid_to_id.js')
+const { verifyProductPid } = require('../../utility/verifyPid.js')
+const { createCart } = require('./create_cart.js')
+const { insertCartItem } = require('./add_cart_item')
 
 module.exports = async (req, res, next) => {
     const {quantity} = req.body;
     const {product_id} = req.params
-    const urlProductPId = product_id
-    let token = res.locals.existingToken;
-    const {tokenCartPid} = res.locals
-    let cartPid = tokenCartPid
+    //let token = res.locals.existingToken;
+    //const {res.locals.cartPid} = res.locals
+    let cartPid = res.locals.cartPid
     const authToken = req.headers.authorization
     console.log("TCL: authToken", authToken)
     
 
     try {
-        const sql = `select "pid" from "products" where "pid"=$1;`
-        const verifyProductPid = await db.query(sql,[urlProductPId])
-        const {rows} = verifyProductPid;
-        const [{pid}] = rows;
-        const verifiedProductPid = pid;
+    
+        //verify valid product pid
+        const verifiedProductPid = await verifyProductPid(product_id)
         
         //confirm valid product id
         if (!verifiedProductPid) {
             res.status(404).send('Invalid Product Id');
             return;
         } else {
-            //get product id from product pid
-            const translatedProductId = await db.query(`select "id" from "products" where "pid"=$1;`,[verifiedProductPid])
-            const {rows} = translatedProductId;
-            //console.log('rows',productIDExists) 
-            const [{id}] = rows;
-            tableProductId = id;
-
-            const getProductDetails = await db.query(`select "cost", p."name", i."pid" as "tnId", "altText", "file", "type" from "products" as p left join "images" as i on p."id"=i."productId" where "type"='thumbnail' and p."pid"=$1;`,[verifiedProductPid])
-                
+            const getProductDetails = await db.query(`select p."id" as "productId","cost", p."name", i."pid" as "tnId", "altText", "file", "type" from "products" as p left join "images" as i on p."id"=i."productId" where "type"='thumbnail' and p."pid"=$1;`,[verifiedProductPid])
+        
             const {rows: productData} = getProductDetails
-            //console.log("TCL: productData", productData)
-            const [{ cost, name, altText, file}] = productData
+            const [{ productId, cost, name, altText, file}] = productData
+            console.log("productId", productId)
+            res.locals.productId = productId
             res.locals.cost = cost
             res.locals.name = name
             res.locals.altText = altText
             res.locals.file = file
         }
 
-        if (!tokenCartPid && !authToken){
-            const activeCartStatus = 2;  //2 is active status cart in cartstatuses table
-            const {rows: tableCartIds} = await db.query(`insert into "carts" ("pid","statusId") values (uuid_generate_v4(),$1) RETURNING id, pid;`,[activeCartStatus]);
-            const [{id,pid}] = tableCartIds;
-            const newCartId = id
-            cartPid = pid
+        if (!res.locals.cartTokenPid && !authToken){
+            console.log('new cart triggered')
+            //add a new guest cart
+            const activeCartStatus = 2;
+            const newCart = await createCart(activeCartStatus)
+            console.log("newCart", newCart)
+            
+            //save new cartId's locally
+            res.locals.cartPid = newCart.pid
+            res.locals.cartId = newCart.id
+            console.log("res.locals.cartId", res.locals.cartId)
 
-            const newAddedCartItem = await db.query(`insert into "cartItems" ("cartId","productId","quantity") values ($1,$2,$3) returning *`,[newCartId,tableProductId,quantity])
-            res.locals.itemId = newAddedCartItem.rows[0].pid
-            res.locals.added = newAddedCartItem.rows[0].createdAt
-                      
+            //add new cart item(s)
+            const newCartItem = await insertCartItem(res.locals.cartId, res.locals.productId, quantity)
+
+            //create guest cart token
             const newCartToken = {
-                cartPid: cartPid,
+                cartPid: res.locals.cartPid,
                 ts: Date()
             }
 
@@ -110,13 +110,13 @@ module.exports = async (req, res, next) => {
             }
             
             //if no existing user cart exists check for cart associated with cart token
-            if(!userCartId && tokenCartPid) {
+            if(!userCartId && res.locals.cartPid) {
 
                 console.log('no user cart id triggered')
 
             //check for existing cartItems with same product
-            //convert tokenCartPid to tokenCartId
-            const queriedTokenCartId = await db.query(`select "id" from "carts" where "pid"=$1;`,[tokenCartPid])
+            //convert res.locals.cartPid to tokenCartId
+            const queriedTokenCartId = await db.query(`select "id" from "carts" where "pid"=$1;`,[res.locals.cartPid])
             const {rows: tokenCartIdResult} = queriedTokenCartId
             const [{id}] = tokenCartIdResult
             const tokenCartId = id
@@ -144,7 +144,7 @@ module.exports = async (req, res, next) => {
                 }
             
             } else {
-                if(!userCartId && !tokenCartPid) {
+                if(!userCartId && !res.locals.cartPid) {
                     console.log("no existing user cart and no cart token")
                     const activeCartStatus = 2;  //2 is active status cart in cartstatuses table
             const {rows: tableCartIds} = await db.query(`insert into "carts" ("userId","pid","statusId") values ($1,uuid_generate_v4(),$2) RETURNING id, pid;`,[userId,activeCartStatus]);
@@ -163,8 +163,8 @@ module.exports = async (req, res, next) => {
 
             } else {
                 console.log('no auth triggered')
-            //convert tokenCartPid to tokenCartId
-            const queriedTokenCartId = await db.query(`select "id" from "carts" where "pid"=$1;`,[tokenCartPid])
+            //convert res.locals.cartPid to tokenCartId
+            const queriedTokenCartId = await db.query(`select "id" from "carts" where "pid"=$1;`,[res.locals.cartPid])
             const {rows: tokenCartIdResult} = queriedTokenCartId
             const [{id}] = tokenCartIdResult
             const tokenCartId = id

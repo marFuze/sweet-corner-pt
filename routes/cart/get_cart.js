@@ -1,5 +1,6 @@
 const {db} = require('../../db')
-const { convertCartPidToId, getCartItems, getCartTotals} = require('./get_cart_items.js')
+const { convertCartPidToId } = require('../../utility/pid_to_id.js')
+const { getCartItems, getCartTotals} = require('./get_cart_items.js')
 
 module.exports = async (req, res, next) => {
 
@@ -73,6 +74,9 @@ module.exports = async (req, res, next) => {
             })
             
         }
+
+            //if cart token only
+
             if(!res.locals.userId && res.locals.cartTokenPid){
         
             //convert cart pid to id

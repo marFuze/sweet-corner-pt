@@ -9,7 +9,7 @@ CREATE TABLE "carts" (
   "createdAt" timestamptz NOT NULL DEFAULT NOW(),
   "updatedAt" timestamptz NOT NULL DEFAULT NOW(),
   "deletedAt" timestamptz DEFAULT NULL
-)
+);
 
 DROP TABLE IF EXISTS "cartItems";
 
