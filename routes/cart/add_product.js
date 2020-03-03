@@ -4,7 +4,9 @@ const { jwtSecret } = require('../../config/jwt');
 const {convertCartPidToId, convertProductPidToId} = require('../../utility/pid_to_id.js')
 const { verifyProductPid } = require('../../utility/verifyPid.js')
 const { createCart } = require('./create_cart.js')
-const { insertCartItem } = require('./add_cart_item')
+const { insertCartItem } = require('../../utility/add_cart_item.js')
+const { existingProductCartItemId } = require('../../utility/check_existing_product.js')
+const { updateProductQuantity } = require('../../utility/update_product_quantity')
 
 module.exports = async (req, res, next) => {
     const {quantity} = req.body;
@@ -85,9 +87,9 @@ module.exports = async (req, res, next) => {
 
             //if user cart found add product as new cartItem or add to existing cartItem
 
-            if(userCartId){
+            if(res.locals.cartTokenPid){
 
-                console.log('user cartid triggered')
+                console.log('user cart token received')
                 const userCartId = checkForUserCarts.rows[0].id
                 //check for existing product_id in cartItems
             const existingProductCartItemId = await db.query(`select "id" from "cartItems" where "productId"=$1 and "cartId"=$2;`,[tableProductId,userCartId])
@@ -154,7 +156,7 @@ module.exports = async (req, res, next) => {
             const newCartId = id
             cartPid = pid
 
-            const newAddedCartItem = await db.query(`insert into "cartItems" ("cartId","productId","quantity") values ($1,$2,$3) returning *`,[newCartId,tableProductId,quantity])
+            const newAddedCartItem = await insertCartItem(res.locals.cartId, res.locals.productId, quantity)
             res.locals.itemId = newAddedCartItem.rows[0].pid
             res.locals.added = newAddedCartItem.rows[0].createdAt
                 }
@@ -162,27 +164,29 @@ module.exports = async (req, res, next) => {
             } 
 
             } else {
-                console.log('no auth triggered')
-            //convert res.locals.cartPid to tokenCartId
-            const queriedTokenCartId = await db.query(`select "id" from "carts" where "pid"=$1;`,[res.locals.cartPid])
-            const {rows: tokenCartIdResult} = queriedTokenCartId
-            const [{id}] = tokenCartIdResult
-            const tokenCartId = id
+                //no auth token but has cart token
+                console.log('no auth token but has cart token')
+            //get cartId from cart token cart pid
+            res.locals.cartId = await convertCartPidToId(res.locals.cartTokenPid)
+            console.log("res.locals.cartId", res.locals.cartId)
 
             //check for existing product_id in cartItems
-            const existingProductCartItemId = await db.query(`select "id" from "cartItems" where "productId"=$1 and "cartId"=$2;`,[tableProductId,tokenCartId])
-            const {rows: existingProduct} = existingProductCartItemId
+            const existingCartItemId = await existingProductCartItemId(res.locals.productId, res.locals.cartId)
+            console.log("existingCartItemId", existingCartItemId)
             
             //add new cartItem if product_id not found
-            if(existingProduct === undefined || existingProduct.length == 0){
-            const addProductToCart = await db.query(`insert into "cartItems" ("cartId","productId","quantity") values ($1,$2,$3) RETURNING *;`,[tokenCartId,tableProductId,quantity]);
+            if(existingCartItemId === undefined || existingCartItemId.length == 0){
+            const addProductToCart = await insertCartItem(res.locals.cartId, res.locals.productId, quantity)
+            console.log("addProductToCart", addProductToCart)
+            
             res.locals.itemId = addProductToCart.rows[0].pid
             res.locals.added = addProdcutToCart.rows[0].createdAt
             }
 
             //update cartItem quantity if product_id found
-            if(existingProduct.length > 0){
-            const updateProductCartItem = await db.query(`update "cartItems" set "quantity" = "quantity" + $1 where "cartId"=$2 and "productId"=$3 RETURNING *;`,[quantity,tokenCartId,tableProductId]);
+            if(existingCartItemId.length > 0){
+            const updateProductCartItem = await updateProductQuantity(quantity,res.locals.cartId,res.locals.productId)
+            console.log("updateProductCartItem", updateProductCartItem)
             res.locals.itemId = updateProductCartItem.rows[0].pid
             res.locals.added = updateProductCartItem.rows[0].updatedAt
                 }
@@ -190,8 +194,8 @@ module.exports = async (req, res, next) => {
         }
             res.status(200).send(
                 {
-                    "cartId": cartPid,
-                    "cartToken": token,
+                    "cartId": res.locals.cartTokenPid,
+                    "cartToken": res.locals.existingToken,
                     "item": {
                         "added":res.locals.added,
                         "each": res.locals.cost,
