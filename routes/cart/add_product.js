@@ -175,16 +175,15 @@ module.exports = async (req, res, next) => {
             console.log("existingCartItemId", existingCartItemId)
             
             //add new cartItem if product_id not found
-            if(existingCartItemId === undefined || existingCartItemId.length == 0){
+            if(existingCartItemId == undefined || existingCartItemId.rows.length < 1){
             const addProductToCart = await insertCartItem(res.locals.cartId, res.locals.productId, quantity)
-            console.log("addProductToCart", addProductToCart)
             
             res.locals.itemId = addProductToCart.rows[0].pid
             res.locals.added = addProdcutToCart.rows[0].createdAt
             }
 
             //update cartItem quantity if product_id found
-            if(existingCartItemId.length > 0){
+            if(existingCartItemId){
             const updateProductCartItem = await updateProductQuantity(quantity,res.locals.cartId,res.locals.productId)
             console.log("updateProductCartItem", updateProductCartItem)
             res.locals.itemId = updateProductCartItem.rows[0].pid
