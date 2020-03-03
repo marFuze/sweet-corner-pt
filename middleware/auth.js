@@ -1,7 +1,7 @@
 const jwt = require('jwt-simple');
 const { jwtSecret } = require('../config/jwt');
 const ApiError = require('../lib/api_error');
-const db = require('../db');
+const {db} = require('../db');
 
 module.exports = async (req, res, next) => {
 
@@ -18,7 +18,7 @@ module.exports = async (req, res, next) => {
 
     // get user id from auth token
     if(authToken) {
-      const {uid} = jwt.decode(authToken.jwtSecret)
+      const {uid} = jwt.decode(authToken, jwtSecret)
       const getUserId = await db.query(`select "id" from "users" where "pid"=$1;`,[uid])
       res.locals.userId = getUserId.rows[0].id
       next()

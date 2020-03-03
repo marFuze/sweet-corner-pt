@@ -15,12 +15,8 @@ const getCartItems = async (cartId) => {
 const getCartTotals = async (cartId) => {
     
     const getTotals = await db.query(`select sum("cost") as "totalCost", sum("quantity") as "totalQuantity" from "cartItems" as ci join "products" as p on ci."productId"=p."id" where "cartId"=$1;`,[cartId])
-       
-    console.log("getCartTotals -> getTotals.rows", getTotals.rows)
-    
     return getTotals.rows[0]
 }
-
 
 module.exports = { convertCartPidToId, getCartItems, getCartTotals }
 
