@@ -1,0 +1,27 @@
+.outer {
+    color: #754b23;
+
+.main {
+    width: 55%;
+    display: table-cell;
+    padding: 20px;
+    font-family: sans-serif;
+  }
+  .aside {
+    width: 45%;
+    background: url(../../assets/images/strips2.png);
+    background-size: contain;
+    display: table-cell;
+    position: relative;
+  }
+  .dots {
+    position: absolute;
+    top: 10%;
+    right: 20%;
+  }
+
+  h2 {
+      text-align: center;
+      font-family: allura;
+  }
+}

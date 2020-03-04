@@ -1,0 +1,25 @@
+    .footer {
+        height: 80px;
+        padding-top: 20px;
+        background-color: #06b4af;
+        color: white;
+        font-family: sans-serif;
+    
+
+    div {
+        height: 100%;
+        width: 33%;
+        float: left;
+        text-align: center;
+    }
+
+    .dots {
+        background: url(../../assets/images/dots-footer.png);
+        background-repeat: no-repeat;
+        background-position: 30px 0px;
+    }
+
+    i {
+        margin-right: 3px;
+      }
+}
