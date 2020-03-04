@@ -38,14 +38,12 @@ module.exports = async (req, res, next) => {
         //If the "X-Cart-Token" header is sent, the item will be added to the cart that belongs to that token.
 
         if(res.locals.cartTokenPid && !authToken) {
+            console.log('cart token pid received:', res.locals.cartTokenPid)
             //convert guest cart pid and check for existing guest cart
             const guestCartId = await convertCartPidToId(res.locals.cartTokenPid)
                 
                 //set current cart id
             res.locals.cartId = guestCartId
-
-                //add userId to cart
-            const updateCartWithUserId = await db.query(`update "carts" set "userId"=$1 where "id"=$2;`,[res.locals.userId,res.locals.cartId])
 
                 //check for existing product_id in cartItems
             const existingCartItemId = await existingProductCartItemId(res.locals.productId, res.locals.cartId)
@@ -74,26 +72,28 @@ module.exports = async (req, res, next) => {
             //add a new guest cart
             const activeCartStatus = 2;
             const newCart = await createCart(activeCartStatus,null)
+            console.log("newCart", newCart)
             
             //save new cartId's locally
             res.locals.cartPid = newCart.pid
             res.locals.cartId = newCart.id
+            console.log("newCart.id", newCart.id)
 
             //add new cart item(s)
             const newCartItem = await insertCartItem(res.locals.cartId, res.locals.productId, quantity)
 
             //create guest cart token
-            const newCartToken = {
+            const newTokenData = {
                 cartPid: res.locals.cartPid,
                 ts: Date()
             }
 
-            token = jwt.encode(newCartToken, jwtSecret)
+            res.locals.newCartToken = jwt.encode(newTokenData, jwtSecret)
         }
 
         //If the "Authorization" header is sent, the item will be added to the users currently active cart. If the user does not have an active cart, a new cart will be created and become the active cart.
 
-        if(authToken && !cartToken){
+        if(authToken && !res.locals.cartTokenPid){
             //check for existing user cart
             const checkForUserCarts = await db.query('select "id" from "carts" where "userId"=$1 and "statusId"=$2;',[res.locals.userId, 2])
             console.log("checkForUserCarts", checkForUserCarts.rows[0])
@@ -146,6 +146,7 @@ module.exports = async (req, res, next) => {
         // If both the auth and cart headers are sent, the auth header will take precedence. Once the user signs in or registers, the cart will be transferred to the user so the cart token is no longer needed and becomes invalid.
 
         if(authToken && res.locals.cartTokenPid) {
+            console.log('authToken and cartToken received')
 
                 //convert guest cart pid and check for existing guest cart
             const guestCartId = await convertCartPidToId(res.locals.cartTokenPid)
@@ -307,7 +308,7 @@ module.exports = async (req, res, next) => {
             res.status(200).send(
                 {
                     "cartId": res.locals.cartTokenPid,
-                    "cartToken": res.locals.existingToken,
+                    "cartToken": res.locals.newCartToken,
                     "item": {
                         "added":res.locals.added,
                         "each": res.locals.cost,
