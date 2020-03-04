@@ -35,6 +35,39 @@ module.exports = async (req, res, next) => {
             res.locals.file = file
         }
 
+        //If the "X-Cart-Token" header is sent, the item will be added to the cart that belongs to that token.
+
+        if(res.locals.cartTokenPid && !authToken) {
+            //convert guest cart pid and check for existing guest cart
+            const guestCartId = await convertCartPidToId(res.locals.cartTokenPid)
+                
+                //set current cart id
+            res.locals.cartId = guestCartId
+
+                //add userId to cart
+            const updateCartWithUserId = await db.query(`update "carts" set "userId"=$1 where "id"=$2;`,[res.locals.userId,res.locals.cartId])
+
+                //check for existing product_id in cartItems
+            const existingCartItemId = await existingProductCartItemId(res.locals.productId, res.locals.cartId)
+            
+                //add new cartItem if product_id not found
+            if(existingCartItemId == undefined || existingCartItemId.rows.length == 0){
+            const addProductToCart = await insertCartItem(res.locals.cartId, res.locals.productId, quantity)
+            
+                //save the new cart item id locally
+            res.locals.itemId = addProductToCart.rows[0].pid
+            res.locals.added = addProdcutToCart.rows[0].createdAt
+            }
+
+                //update cartItem quantity if product_id found
+            if(existingCartItemId.rows.length > 0){
+            const updateProductCartItem = await updateProductQuantity(quantity,res.locals.cartId,res.locals.productId)
+                //console.log("updateProductCartItem", updateProductCartItem)
+            res.locals.itemId = updateProductCartItem.rows[0].pid
+            res.locals.added = updateProductCartItem.rows[0].updatedAt
+                }
+        }
+
         //If no headers are sent a new cart will be created and the cart token will be sent in the response. All subsequent requests should use the provided cart token if not logged in, this will ensure that all user items will be added to the same cart.
         if (!res.locals.cartTokenPid && !authToken){
             console.log('new cart triggered')
@@ -112,22 +145,36 @@ module.exports = async (req, res, next) => {
         
         // If both the auth and cart headers are sent, the auth header will take precedence. Once the user signs in or registers, the cart will be transferred to the user so the cart token is no longer needed and becomes invalid.
 
-        if(authtoken && res.locals.cartTokenPid) {
+        if(authToken && res.locals.cartTokenPid) {
 
-            //convert guest cart pid and check for existing guest cart
+                //convert guest cart pid and check for existing guest cart
             const guestCartId = await convertCartPidToId(res.locals.cartTokenPid)
-            //set current cart id
+                
+                //set current cart id
             res.locals.cartId = guestCartId
 
-             //add userId to cart
+                //add userId to cart
+            const updateCartWithUserId = await db.query(`update "carts" set "userId"=$1 where "id"=$2;`,[res.locals.userId,res.locals.cartId])
 
-            const updateCartWithUserId = await db.query(`update "carts" set "userId"=$1 where "id"=$2;`,[userId,tokenCartId])
+                //check for existing product_id in cartItems
+            const existingCartItemId = await existingProductCartItemId(res.locals.productId, res.locals.cartId)
+            
+                //add new cartItem if product_id not found
+            if(existingCartItemId == undefined || existingCartItemId.rows.length == 0){
+            const addProductToCart = await insertCartItem(res.locals.cartId, res.locals.productId, quantity)
+            
+                //save the new cart item id locally
+            res.locals.itemId = addProductToCart.rows[0].pid
+            res.locals.added = addProdcutToCart.rows[0].createdAt
+            }
 
-
-
-
-
-
+                //update cartItem quantity if product_id found
+            if(existingCartItemId.rows.length > 0){
+            const updateProductCartItem = await updateProductQuantity(quantity,res.locals.cartId,res.locals.productId)
+                //console.log("updateProductCartItem", updateProductCartItem)
+            res.locals.itemId = updateProductCartItem.rows[0].pid
+            res.locals.added = updateProductCartItem.rows[0].updatedAt
+                }
         }
 
 
