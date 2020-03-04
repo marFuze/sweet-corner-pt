@@ -34,6 +34,7 @@ module.exports = async (req, res, next) => {
             res.locals.altText = altText
             res.locals.file = file
         }
+
         //If no headers are sent a new cart will be created and the cart token will be sent in the response. All subsequent requests should use the provided cart token if not logged in, this will ensure that all user items will be added to the same cart.
         if (!res.locals.cartTokenPid && !authToken){
             console.log('new cart triggered')
@@ -59,7 +60,7 @@ module.exports = async (req, res, next) => {
 
         //If the "Authorization" header is sent, the item will be added to the users currently active cart. If the user does not have an active cart, a new cart will be created and become the active cart.
 
-        if(authToken){
+        if(authToken && !cartToken){
             //check for existing user cart
             const checkForUserCarts = await db.query('select "id" from "carts" where "userId"=$1 and "statusId"=$2;',[res.locals.userId, 2])
             console.log("checkForUserCarts", checkForUserCarts.rows[0])
@@ -85,7 +86,7 @@ module.exports = async (req, res, next) => {
                 //set user cart id   
             const {id} = checkForUserCarts.rows[0]
             res.locals.cartId = id
-            
+
                 //check for existing product_id in cartItems
             const existingCartItemId = await existingProductCartItemId(res.locals.productId, res.locals.cartId)
             
@@ -107,7 +108,29 @@ module.exports = async (req, res, next) => {
                 }
             }
 
-        } 
+        }
+        
+        // If both the auth and cart headers are sent, the auth header will take precedence. Once the user signs in or registers, the cart will be transferred to the user so the cart token is no longer needed and becomes invalid.
+
+        if(authtoken && res.locals.cartTokenPid) {
+
+            //convert guest cart pid and check for existing guest cart
+            const guestCartId = await convertCartPidToId(res.locals.cartTokenPid)
+            //set current cart id
+            res.locals.cartId = guestCartId
+
+             //add userId to cart
+
+            const updateCartWithUserId = await db.query(`update "carts" set "userId"=$1 where "id"=$2;`,[userId,tokenCartId])
+
+
+
+
+
+
+        }
+
+
 
 
 
