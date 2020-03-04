@@ -12,6 +12,7 @@ module.exports = async (req, res, next) => {
     const {quantity} = req.body;
     const {product_id} = req.params
     const authToken = req.headers.authorization
+    const cartToken = req.headers['x-cart-token']
 
     try {
     
@@ -64,6 +65,7 @@ module.exports = async (req, res, next) => {
             res.locals.itemId = updateProductCartItem.rows[0].pid
             res.locals.added = updateProductCartItem.rows[0].updatedAt
                 }
+                res.locals.existingCartToken = cartToken
         }
 
         //If no headers are sent a new cart will be created and the cart token will be sent in the response. All subsequent requests should use the provided cart token if not logged in, this will ensure that all user items will be added to the same cart.
@@ -88,7 +90,8 @@ module.exports = async (req, res, next) => {
                 ts: Date()
             }
 
-            res.locals.newCartToken = jwt.encode(newTokenData, jwtSecret)
+            res.locals.existingCartToken = jwt.encode(newTokenData, jwtSecret)
+            console.log("res.locals.existingCartToken", res.locals.existingCartToken)
         }
 
         //If the "Authorization" header is sent, the item will be added to the users currently active cart. If the user does not have an active cart, a new cart will be created and become the active cart.
@@ -178,137 +181,10 @@ module.exports = async (req, res, next) => {
                 }
         }
 
-
-
-
-
-
-        // }  else
-
-        // {
-        //     if(authToken){
-        //         console.log('auth token received')
-
-        //     //check for existing user cart
-
-        //     const checkForUserCarts = await db.query('select "id" from "carts" where "userId"=$1 and "statusId"=$2;',[res.locals.userId, 2])
-        //     //console.log("checkForUserCarts", checkForUserCarts)
-            
-
-        //     //if user cart found add product as new cartItem or add to existing cartItem
-
-        //     if(checkForUserCarts.rows.length>0){
-                
-        //         res.locals.cartId = checkForUserCarts.rows[0]
-        //         console.log("checkForUserCarts.rows[0]", checkForUserCarts.rows[0])
-        
-        //     //check for existing product_id in cartItems
-        //     const existingCartItemId = await existingProductCartItemId(res.locals.productId, res.locals.cartId)
-        //     //console.log("existingCartItemId", existingCartItemId)
-
-        //     //add new cartItem if product_id not found
-        //     if(existingCartItemId == undefined || existingCartItemId.rows.length < 0){
-        //         const addProductToCart = await insertCartItem(res.locals.cartId, res.locals.productId, quantity)
-                
-        //         res.locals.itemId = addProductToCart.rows[0].pid
-        //         res.locals.added = addProdcutToCart.rows[0].createdAt
-        //         }
-    
-        //         //update cartItem quantity if product_id found
-        //         if(existingCartItemId){
-        //         const updateProductCartItem = await updateProductQuantity(quantity,res.locals.cartId,res.locals.productId)
-        //         console.log("updateProductCartItem", updateProductCartItem)
-        //         res.locals.itemId = updateProductCartItem.rows[0].pid
-        //         res.locals.added = updateProductCartItem.rows[0].updatedAt
-        //             }
-
-        //     }
-            
-        //     //if no existing user cart exists check for cart associated with cart token
-        //     if(checkForUserCarts.rows.length>0 && res.locals.cartPid) {
-
-        //         console.log('no user cart id triggered')
-
-        //     //check for existing cartItems with same product
-        //     //convert res.locals.cartPid to tokenCartId
-        //     const queriedTokenCartId = await db.query(`select "id" from "carts" where "pid"=$1;`,[res.locals.cartPid])
-        //     const {rows: tokenCartIdResult} = queriedTokenCartId
-        //     const [{id}] = tokenCartIdResult
-        //     const tokenCartId = id
-
-        //     //add userId to cart
-
-        //     const updateCartWithUserId = await db.query(`update "carts" set "userId"=$1 where "id"=$2;`,[userId,tokenCartId])
-
-        //     //check for existing product_id in cartItems
-        //     //check for existing product_id in cartItems
-        //     const existingCartItemId = await existingProductCartItemId(res.locals.productId, res.locals.cartId)
-        //     console.log("existingCartItemId", existingCartItemId)
-
-        //     //add new cartItem if product_id not found
-        //     if(existingProduct === undefined || existingProduct.length == 0){
-        //     const addProductToCart = await db.query(`insert into "cartItems" ("cartId","productId","quantity") values ($1,$2,$3) RETURNING *;`,[tokenCartId,tableProductId,quantity]);
-        //     res.locals.itemId = addProductToCart.rows[0].pid
-        //     res.locals.added = addProdcutToCart.rows[0].createdAt
-        //     }
-
-        //     //update cartItem quantity if product_id found
-        //     if(existingProduct.length > 0){
-        //     const updateProductCartItem = await db.query(`update "cartItems" set "quantity" = "quantity" + $1 where "cartId"=$2 and "productId"=$3 RETURNING *;`,[quantity,tokenCartId,tableProductId]);
-        //     res.locals.itemId = updateProductCartItem.rows[0].pid
-        //     res.locals.added = updateProductCartItem.rows[0].updatedAt
-        //         }
-            
-        //     } else {
-        //         if(checkForUserCarts.rows.length>0 && !res.locals.cartPid) {
-        //             console.log("no existing user cart and no cart token")
-        //             const activeCartStatus = 2;  //2 is active status cart in cartstatuses table
-        //     const {rows: tableCartIds} = await db.query(`insert into "carts" ("userId","pid","statusId") values ($1,uuid_generate_v4(),$2) RETURNING id, pid;`,[userId,activeCartStatus]);
-        //     console.log("TCL: tableCartIds", tableCartIds)
-        //     console.log("TCL: userId", userId)
-        //     const [{id,pid}] = tableCartIds;
-        //     const newCartId = id
-        //     cartPid = pid
-
-        //     const newAddedCartItem = await insertCartItem(res.locals.cartId, res.locals.productId, quantity)
-        //     res.locals.itemId = newAddedCartItem.rows[0].pid
-        //     res.locals.added = newAddedCartItem.rows[0].createdAt
-        //         }
-
-        //     } 
-
-        //     } else {
-        //         //no auth token but has cart token
-        //         console.log('no auth token but has cart token')
-        //     //get cartId from cart token cart pid
-        //     res.locals.cartId = await convertCartPidToId(res.locals.cartTokenPid)
-        //     console.log("res.locals.cartId", res.locals.cartId)
-
-        //     //check for existing product_id in cartItems
-        //     const existingCartItemId = await existingProductCartItemId(res.locals.productId, res.locals.cartId)
-        //     console.log("existingCartItemId", existingCartItemId)
-            
-        //     //add new cartItem if product_id not found
-        //     if(existingCartItemId == undefined || existingCartItemId.rows.length < 1){
-        //     const addProductToCart = await insertCartItem(res.locals.cartId, res.locals.productId, quantity)
-            
-        //     res.locals.itemId = addProductToCart.rows[0].pid
-        //     res.locals.added = addProdcutToCart.rows[0].createdAt
-        //     }
-
-        //     //update cartItem quantity if product_id found
-        //     if(existingCartItemId){
-        //     const updateProductCartItem = await updateProductQuantity(quantity,res.locals.cartId,res.locals.productId)
-        //     console.log("updateProductCartItem", updateProductCartItem)
-        //     res.locals.itemId = updateProductCartItem.rows[0].pid
-        //     res.locals.added = updateProductCartItem.rows[0].updatedAt
-        //         }
-        //     }
-        
             res.status(200).send(
                 {
                     "cartId": res.locals.cartTokenPid,
-                    "cartToken": res.locals.newCartToken,
+                    "cartToken": res.locals.existingCartToken,
                     "item": {
                         "added":res.locals.added,
                         "each": res.locals.cost,

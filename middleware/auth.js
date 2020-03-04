@@ -26,8 +26,10 @@ module.exports = async (req, res, next) => {
     
     //get cart pid from cart token
     if(cartToken) {
+      console.log("cartToken", cartToken)
       const {cartPid} = jwt.decode(cartToken, jwtSecret)
       res.locals.cartTokenPid = cartPid;
+      console.log("res.locals.cartTokenPid", res.locals.cartTokenPid)
       res.locals.existingToken = cartToken;
 
     // Go to the next thing...
