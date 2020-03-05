@@ -13,6 +13,8 @@ function ApplyRoutes(app){
 
     app.use('/api/orders', require('./orders'))
 
+    app.use('/images', require('./images'))
+
     return app
 }
 

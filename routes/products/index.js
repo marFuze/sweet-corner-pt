@@ -1,18 +1,19 @@
 const express = require('express');
 const {db} = require('../../db');
 const router = express.Router();
+const {urlImages} = require('../../utility/url_images')
 
 //get all products
 router.get('/', async (req, res, next) => {
     try {
-
+        //console.log("req", req)
         const resp = await db.query(`select p."pid" as id, "caption", "cost", p."name", i."pid" as "tnId", "altText", "file", "type" from "products" as p left join "images" as i on p."id"=i."productId" where "type"='thumbnail';`);
 
         const { rows: productList } = resp
 
         const formattedProductsList = productList.map( product => {
            const  { tnId, altText, file, type, ...p} = product;
-
+           
            return {
                ...p,
                thumbnail: {
@@ -20,8 +21,7 @@ router.get('/', async (req, res, next) => {
                    altText: altText,
                    file: file,
                    type: type,
-                   url: `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
-                   //update path with local paths
+                   url: urlImages(req, type, file)
                }
            }
         })
@@ -54,17 +54,15 @@ router.get('/:product', async (req, res, next) => {
                     id: tnId,
                     altText: altText,
                     file: file,
-                    type: "full_images",
-                    url: `http://api.sc.lfzprototypes.com/images/full_images/${file}`
-                    //update path with local path
+                    type: type,
+                    url: urlImages(req, type, file)
                 },
                 thumbnail: {
                     id: tnId,
                     altText: altText,
                     file: file,
-                    type: "thumbnails",
-                    url: `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
-                    //update path with local path
+                    type: type,
+                    url: urlImages(req, type, file)
                 }
             }
         });

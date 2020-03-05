@@ -1,7 +1,7 @@
 import types from './types';
 import axios from 'axios';
 
-const BASE_URL = 'http://api.sc.lfzprototypes.com';
+//const BASE_URL = 'http://api.sc.lfzprototypes.com';
 
 export function getScheduleData(){
     return async  function (dispatch) {
