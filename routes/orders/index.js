@@ -1,3 +1,7 @@
+// get guest order details
+//Email must be the same email the order was created with
+
+
 const express = require('express');
 const router = express.Router();
 const {db} = require('../../db');

@@ -1,3 +1,6 @@
+//add auth token expiration
+
+
 const jwt = require('jwt-simple');
 const { jwtSecret } = require('../config/jwt');
 const ApiError = require('../lib/api_error');

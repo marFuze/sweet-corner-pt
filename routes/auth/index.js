@@ -1,3 +1,10 @@
+// email: 'jane@example.com', // Must be a valid email address
+//     firstName: 'Jane',
+//     lastName: 'Doe',
+//     password: 'Qwerty1!' // Must have an uppercase letter, lowercase letter, number, special character, and be at least 8 characters long
+}
+
+
 const express = require('express');
 const router = express.Router();
 const {db} = require('../../db');
