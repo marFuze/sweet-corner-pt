@@ -4,6 +4,7 @@ const {db} = require('../../db');
 const jwt = require('jwt-simple');
 const { jwtSecret } = require('../../config/jwt');
 const auth = require('../../middleware/auth');
+const {urlImages} = require('../../utility/url_images')
 
 //get all user's orders
 
@@ -77,10 +78,10 @@ router.get('/:order_id', async (req, res, next) => {
 
         //get order items
 
-        const getUserOrderItems = await db.query(`select oi."pid" as "orderItemPid", quantity, cost, p."name" as "productName", p."pid" as "productPid", "altText", "file" from "orderItems" as oi join "products" as p on oi."productId"=p."id" join "images" as i on i."productId"=p."id" where "orderId"=$1 and "type"=$2;`,[id,'thumbnail'])
+        const getUserOrderItems = await db.query(`select oi."pid" as "orderItemPid", quantity, cost, p."name" as "productName", p."pid" as "productPid", "altText", "type", "file" from "orderItems" as oi join "products" as p on oi."productId"=p."id" join "images" as i on i."productId"=p."id" where "orderId"=$1 and "type"=$2;`,[id,'thumbnail'])
             const getUserOrderItemsResult = getUserOrderItems.rows
         const userOrderItems = getUserOrderItemsResult.map( items => {
-            const  { orderItemPid, quantity, cost, productName, productPid, altText, file } = items
+            const  { orderItemPid, quantity, cost, productName, productPid, altText, type, file } = items
  
             return {
     
@@ -93,7 +94,7 @@ router.get('/:order_id', async (req, res, next) => {
                         "id": productPid,
                         "thumbnail": {
                             "altText": altText,
-                            "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
+                            "url": urlImages(req, type, file)
                         }, 
                     }
             }
@@ -279,10 +280,10 @@ router.get('/guest/:order_id', async (req, res, next) => {
 
         //get order items
 
-        const getGuestOrderItems = await db.query(`select oi."pid" as "orderItemPid", quantity, cost, p."name" as "productName", p."pid" as "productPid", "altText", "file" from "orderItems" as oi join "products" as p on oi."productId"=p."id" join "images" as i on i."productId"=p."id" where "orderId"=$1 and "type"=$2;`,[id,'thumbnail'])
+        const getGuestOrderItems = await db.query(`select oi."pid" as "orderItemPid", quantity, cost, p."name" as "productName", p."pid" as "productPid", "altText", "type", "file" from "orderItems" as oi join "products" as p on oi."productId"=p."id" join "images" as i on i."productId"=p."id" where "orderId"=$1 and "type"=$2;`,[id,'thumbnail'])
             const getGuestOrderItemsResult = getGuestOrderItems.rows
         const guestOrderItems = getGuestOrderItemsResult.map( items => {
-            const  { orderItemPid, quantity, cost, productName, productPid, altText, file } = items
+            const  { orderItemPid, quantity, cost, productName, productPid, altText, type, file } = items
  
             return {
     
@@ -295,7 +296,7 @@ router.get('/guest/:order_id', async (req, res, next) => {
                         "id": productPid,
                         "thumbnail": {
                             "altText": altText,
-                            "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
+                            "url": urlImages(req, type, file)
                         }, 
                     }
             }

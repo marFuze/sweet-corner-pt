@@ -1,6 +1,7 @@
 const {db} = require('../../db')
 const { convertCartPidToId } = require('../../utility/pid_to_id.js')
 const { getCartItems, getCartTotals} = require('./get_cart_items.js')
+const {urlImages} = require('../../utility/url_images')
 
 module.exports = async (req, res, next) => {
 
@@ -45,7 +46,7 @@ module.exports = async (req, res, next) => {
            //format and return cart items object
 
            const cartItems = getItemsResult.map( items => {
-            const  { pid, productId, quantity, createdAt, cost, name, altText, file } = items
+            const  { pid, productId, quantity, createdAt, cost, name, type, altText, file } = items
             
             return {
         
@@ -57,7 +58,7 @@ module.exports = async (req, res, next) => {
             "quantity": quantity,
             "thumbnail": {
                 "altText": altText,
-                "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
+                "url": urlImages(req, type, file)
             },
             "total": cost * quantity
             }
@@ -107,7 +108,7 @@ module.exports = async (req, res, next) => {
            //format and return cart items object
 
            const cartItems = getItemsResult.map( items => {
-            const  { pid, productId, quantity, createdAt, cost, name, altText, file } = items
+            const  { pid, productId, quantity, createdAt, cost, name, type, altText, file } = items
             
             return {
         
@@ -119,7 +120,7 @@ module.exports = async (req, res, next) => {
             "quantity": quantity,
             "thumbnail": {
                 "altText": altText,
-                "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${file}`
+                "url": urlImages(req, type, file)
             },
             "total": cost * quantity
             }

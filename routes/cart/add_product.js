@@ -7,6 +7,7 @@ const { createCart } = require('../../utility/create_cart.js')
 const { insertCartItem } = require('../../utility/add_cart_item.js')
 const { existingProductCartItemId } = require('../../utility/check_existing_product.js')
 const { updateProductQuantity } = require('../../utility/update_product_quantity')
+const {urlImages} = require('../../utility/url_images') 
 
 module.exports = async (req, res, next) => {
     const {quantity} = req.body;
@@ -27,12 +28,12 @@ module.exports = async (req, res, next) => {
             const getProductDetails = await db.query(`select p."id" as "productId","cost", p."name", i."pid" as "tnId", "altText", "file", "type" from "products" as p left join "images" as i on p."id"=i."productId" where "type"='thumbnail' and p."pid"=$1;`,[verifiedProductPid])
         
             const {rows: productData} = getProductDetails
-            const [{ productId, cost, name, altText, file}] = productData
-            console.log("productId", productId)
+            const [{ productId, cost, name, altText, type, file}] = productData
             res.locals.productId = productId
             res.locals.cost = cost
             res.locals.name = name
             res.locals.altText = altText
+            res.locals.type = type
             res.locals.file = file
         }
 
@@ -163,7 +164,7 @@ module.exports = async (req, res, next) => {
                 //check for existing product_id in cartItems
             const existingCartItemId = await existingProductCartItemId(res.locals.productId, res.locals.cartId)
             
-                //add new cartItem if product_id not found
+                //add new cart item if product_id not found
             if(existingCartItemId == undefined || existingCartItemId.rows.length == 0){
             const addProductToCart = await insertCartItem(res.locals.cartId, res.locals.productId, quantity)
             
@@ -194,7 +195,7 @@ module.exports = async (req, res, next) => {
                         "quantity": quantity,
                         "thumbnail": {
                             "altText": res.locals.altText,
-                            "url": `http://api.sc.lfzprototypes.com/images/thumbnails/${res.locals.file}`
+                            "url": urlImages(req, res.locals.type, res.locals.file)
                         },
                         "total": quantity * res.locals.cost
                     },
