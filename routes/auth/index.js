@@ -5,14 +5,15 @@
 
 
 
-const express = require('express');
-const router = express.Router();
-const {db} = require('../../db');
-const jwt = require('jwt-simple');
-const { jwtSecret } = require('../../config/jwt');
-const {generate, compare} = require('../../lib/hash');
+const express = require('express')
+const router = express.Router()
+const {db} = require('../../db')
+const jwt = require('jwt-simple')
+const { jwtSecret } = require('../../config/jwt')
+const {generate, compare} = require('../../lib/hash')
+const auth = require('../../middleware/auth.js')
 
-router.post('/create-account', async (req, res, next) => {
+router.post('/create-account', auth, async (req, res, next) => {
     const { email, firstName, lastName, password } = req.body;
     const passwordHash = await generate(password);
 
@@ -21,11 +22,12 @@ router.post('/create-account', async (req, res, next) => {
     [firstName, lastName, email, passwordHash]);
     const { rows: newUserPid } = addedUser;
     const [{pid}] = newUserPid;
-    const token = jwt.encode({uid: pid}, jwtSecret)
-        //sample code to expire token - 2 weeks per docs
-        // let expires = (Date.now() / 1000) + 60 * 30
-        // let nbf = Date.now() / 1000
-        // let token = await jwt.encode({nbf: nbf, exp: expires, id: user_id}, jwtSecret).
+    //create token expiration date 
+    //1000ms * 60sec * 60min * 24hrs * 14days
+    const twoWeeksInMsec = 1000 * 60 * 60 * 24 * 14
+    const expires = Date.now() + twoWeeksInMsec
+    const token = jwt.encode({exp: expires, uid: pid}, jwtSecret)
+        
             res.send({
                 "token": token,
                 "user": {

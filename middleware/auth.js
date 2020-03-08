@@ -20,8 +20,18 @@ module.exports = async (req, res, next) => {
     }
 
     // get user id from auth token
+    //check exp expiration date
     if(authToken) {
-      const {uid} = jwt.decode(authToken, jwtSecret)
+      const {exp, uid} = jwt.decode(authToken, jwtSecret)
+      //const dateNow = Date.now()/1000
+      const dateNow = (Date.now()/1000 - (60 * 60 * 24 * 14))
+      if (exp > dateNow){
+        console.log("dateNow", dateNow)
+        console.log("ex", ex)
+        res.status(404).send('Your session is expired. Please sign in again.');
+            return;
+      }
+
       const getUserId = await db.query(`select "id" from "users" where "pid"=$1;`,[uid])
       res.locals.userId = getUserId.rows[0].id
       next()
