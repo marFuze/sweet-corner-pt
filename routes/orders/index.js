@@ -275,13 +275,15 @@ router.post('/guest', async (req, res, next) => {
 
 router.get('/guest/:order_id', async (req, res, next) => { 
     const { email } = req.query
+    console.log(" email",  email)
     const { order_id } = req.params
     console.log("TCL: order_id", order_id)
-
+    console.log(res.locals.guestEmail)
     try {
 
-        if(email == res.locals.guestEmail){
-            console.log('guest email matched')
+        //if(email == res.locals.guestEmail){
+           // console.log("res.locals.guestEmail", res.locals.guestEmail)
+           // console.log('guest email matched')
         const getOrder = await db.query(`select * from "orders" where "pid"=$1;`,[order_id])
 
         const [{ id, itemCount, pid, total, createdAt, statusId }] = getOrder.rows
@@ -319,7 +321,7 @@ router.get('/guest/:order_id', async (req, res, next) => {
             "status": "Pending",
             "items": guestOrderItems
         })
-    }
+    //}
         res.status(402).send('guest email invalid.')
 
     }
