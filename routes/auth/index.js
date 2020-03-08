@@ -12,12 +12,24 @@ const jwt = require('jwt-simple')
 const { jwtSecret } = require('../../config/jwt')
 const {generate, compare} = require('../../lib/hash')
 const auth = require('../../middleware/auth.js')
+const validator = require("email-validator")
 
 router.post('/create-account', auth, async (req, res, next) => {
     const { email, firstName, lastName, password } = req.body;
     const passwordHash = await generate(password);
+    const passwordRegEx = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\s).{8,15}$/
 
     try {  
+
+    if(!validator.validate(email)){
+        res.status(404).send('Invalid Email');
+            return;
+    }
+    if(!password.match(passwordRegEx)){
+        res.status(404).send('Invalid Password. Please enter a stronger password.');
+            return;
+    }
+    
     const addedUser = await db.query(`insert into "users" ("firstName","lastName","email","password") values ($1,$2,$3,$4) RETURNING pid`,
     [firstName, lastName, email, passwordHash]);
     const { rows: newUserPid } = addedUser;
