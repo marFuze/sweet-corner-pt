@@ -196,6 +196,7 @@ router.post('/guest', async (req, res, next) => {
     const cartToken = req.headers['x-cart-token']
     const { email, firstName, lastName } = req.body
     console.log("TCL: email", email)
+    res.locals.guestEmail = email
     try{
         if(cartToken){
             const decodedToken = jwt.decode(cartToken, jwtSecret);
@@ -270,6 +271,7 @@ router.post('/guest', async (req, res, next) => {
 })
 
 //get guest order details
+//Email must be the same email the order was created with
 
 router.get('/guest/:order_id', async (req, res, next) => { 
     const { email } = req.query
@@ -278,6 +280,8 @@ router.get('/guest/:order_id', async (req, res, next) => {
 
     try {
 
+        if(email == res.locals.guestEmail){
+            console.log('guest email matched')
         const getOrder = await db.query(`select * from "orders" where "pid"=$1;`,[order_id])
 
         const [{ id, itemCount, pid, total, createdAt, statusId }] = getOrder.rows
@@ -315,6 +319,8 @@ router.get('/guest/:order_id', async (req, res, next) => {
             "status": "Pending",
             "items": guestOrderItems
         })
+    }
+        res.status(402).send('guest email invalid.')
 
     }
     catch(err){
