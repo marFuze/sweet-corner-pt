@@ -13,3 +13,17 @@ CREATE TABLE "users" (
 "updatedAt" timestamptz NOT NULL DEFAULT NOW(),
 "deletedAt" timestamptz NOT NULL DEFAULT NOW()
 );
+
+DROP TABLE IF EXISTS "users";
+
+CREATE TABLE "guests" (
+"id" SERIAL,
+"pid" uuid default uuid_generate_v4(),
+"firstname" text,
+"lastName" text,
+"email" text,
+"lastAccessedAt" timestamptz NOT NULL DEFAULT NOW(),
+"createdAt" timestamptz NOT NULL DEFAULT NOW(),
+"updatedAt" timestamptz NOT NULL DEFAULT NOW(),
+"deletedAt" timestamptz NOT NULL DEFAULT NOW()
+);

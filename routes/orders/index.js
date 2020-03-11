@@ -229,9 +229,25 @@ router.post('/guest', async (req, res, next) => {
             console.log("TCL: getCartTotalsResult", getCartTotalsResult)
             const [{ totalcost, totalquantity}] = getCartTotalsResult
             //console.log("TCL: totalquantity", totalquantity)
+
+            //create guest account if does not exist
+
+            const checkGuestAccount = await db.query(`select "guestId" from "guests" where "email" = $1;,[email]`)
+
+            if(checkGuestAccount.rows.length=0){
+            const createGuestAccount = await db.query(`insert into "guests" ("pid", "firstName", "lastName", "email") values ("firstName", "lastName", "email") values (uuid_generate_v4(),$1,$2,$3) returning "guestId"`, [firstName, lastName, email])
+            const guestId = checkGuestAccount.rows[0]
+            console.log("guestId", guestId)
+            res.locals.guestId = guestId
+            }
+
+            if(checkGuestAccount.rows.length>0){
+            const existingGuestId = checkGuestAccount.rows[0].guestId
+            res.locals.guestId = existingGuestId
+            }
         
             //insert new guest order
-            const createGuestOrder = await db.query(`insert into "orders" ("pid","itemCount", "total", "cartId", "guestId", "statusId" ) values (uuid_generate_v4(),$1,$2,$3,$4,$5) returning "id","pid";`,[totalquantity, totalcost, cartTokenCartId, 1, 1])
+            const createGuestOrder = await db.query(`insert into "orders" ("pid","itemCount", "total", "cartId", "guestId", "statusId" ) values (uuid_generate_v4(),$1,$2,$3,$4,$5) returning "id","pid";`,[totalquantity, totalcost, cartTokenCartId, 1, res.locals.guestId])
             //console.log("TCL: createGuestOrder", createGuestOrder)
             const [{ id, pid }] = createGuestOrder.rows
             console.log("TCL: id,pid", id, pid)
