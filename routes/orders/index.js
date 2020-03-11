@@ -193,6 +193,7 @@ next(err)
 //create new guest order
 
 router.post('/guest', async (req, res, next) => {
+    console.log('create guest order triggered')
     const cartToken = req.headers['x-cart-token']
     const { email, firstName, lastName } = req.body
     console.log("TCL: email", email)
@@ -232,22 +233,25 @@ router.post('/guest', async (req, res, next) => {
 
             //create guest account if does not exist
 
-            const checkGuestAccount = await db.query(`select "guestId" from "guests" where "email" = $1;,[email]`)
+            const checkGuestAccount = await db.query(`select "id" from "guests" where "email"=$1;`,[email])
+            console.log("checkGuestAccount", checkGuestAccount.rows[0])
 
-            if(checkGuestAccount.rows.length=0){
-            const createGuestAccount = await db.query(`insert into "guests" ("pid", "firstName", "lastName", "email") values ("firstName", "lastName", "email") values (uuid_generate_v4(),$1,$2,$3) returning "guestId"`, [firstName, lastName, email])
-            const guestId = checkGuestAccount.rows[0]
+            if(checkGuestAccount.rows.length==0){
+            const createGuestAccount = await db.query(`insert into "guests" ("pid", "firstName", "lastName", "email") values (uuid_generate_v4(),$1,$2,$3) returning "id";`, [firstName, lastName, email])
+            console.log("createGuestAccount", createGuestAccount)
+            const { guestId } = createGuestAccount.rows[0]
             console.log("guestId", guestId)
             res.locals.guestId = guestId
             }
 
             if(checkGuestAccount.rows.length>0){
-            const existingGuestId = checkGuestAccount.rows[0].guestId
+            const existingGuestId = checkGuestAccount.rows[0].id
             res.locals.guestId = existingGuestId
+            console.log("res.locals.guestId", res.locals.guestId)
             }
         
             //insert new guest order
-            const createGuestOrder = await db.query(`insert into "orders" ("pid","itemCount", "total", "cartId", "guestId", "statusId" ) values (uuid_generate_v4(),$1,$2,$3,$4,$5) returning "id","pid";`,[totalquantity, totalcost, cartTokenCartId, 1, res.locals.guestId])
+            const createGuestOrder = await db.query(`insert into "orders" ("pid","itemCount", "total", "cartId", "guestId", "statusId" ) values (uuid_generate_v4(),$1,$2,$3,$4,$5) returning "id","pid";`,[totalquantity, totalcost, cartTokenCartId, res.locals.guestId, 2])
             //console.log("TCL: createGuestOrder", createGuestOrder)
             const [{ id, pid }] = createGuestOrder.rows
             console.log("TCL: id,pid", id, pid)
@@ -270,10 +274,6 @@ router.post('/guest', async (req, res, next) => {
                     next(err)
                 }
              })
-
-
-
-            console.log("TCL: newOrderItems", newOrderItems)
     
             res.send({
                 "message": "Your order has been placed",
@@ -294,7 +294,7 @@ router.get('/guest/:order_id', async (req, res, next) => {
     console.log(" email",  email)
     const { order_id } = req.params
     console.log("TCL: order_id", order_id)
-    console.log(res.locals.guestEmail)
+    //console.log("guest email", res.locals.guestEmail)
     try {
 
         //if(email == res.locals.guestEmail){

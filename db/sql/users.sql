@@ -4,7 +4,7 @@ CREATE TABLE "users" (
 "id" SERIAL,
 "pid" uuid default uuid_generate_v4(),
 "roleId" int default 1,
-"firstname" text,
+"firstName" text,
 "lastName" text,
 "email" text,
 "password" text,
@@ -14,12 +14,12 @@ CREATE TABLE "users" (
 "deletedAt" timestamptz NOT NULL DEFAULT NOW()
 );
 
-DROP TABLE IF EXISTS "users";
+DROP TABLE IF EXISTS "guests";
 
 CREATE TABLE "guests" (
 "id" SERIAL,
 "pid" uuid default uuid_generate_v4(),
-"firstname" text,
+"firstName" text,
 "lastName" text,
 "email" text,
 "lastAccessedAt" timestamptz NOT NULL DEFAULT NOW(),
