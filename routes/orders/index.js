@@ -239,8 +239,8 @@ router.post('/guest', async (req, res, next) => {
             if(checkGuestAccount.rows.length==0){
             const createGuestAccount = await db.query(`insert into "guests" ("pid", "firstName", "lastName", "email") values (uuid_generate_v4(),$1,$2,$3) returning "id";`, [firstName, lastName, email])
             console.log("createGuestAccount", createGuestAccount)
-            const { guestId } = createGuestAccount.rows[0]
-            console.log("guestId", guestId)
+            const guestId  = createGuestAccount.rows[0].id
+            console.log("new guestId", guestId)
             res.locals.guestId = guestId
             }
 
@@ -290,23 +290,20 @@ router.post('/guest', async (req, res, next) => {
 //Email must be the same email the order was created with
 
 router.get('/guest/:order_id', async (req, res, next) => { 
+    console.log('get guest order details triggered')
     const { email } = req.query
     console.log(" email",  email)
     const { order_id } = req.params
     console.log("TCL: order_id", order_id)
-    //console.log("guest email", res.locals.guestEmail)
     try {
 
-        //if(email == res.locals.guestEmail){
-           // console.log("res.locals.guestEmail", res.locals.guestEmail)
-           // console.log('guest email matched')
-        const getOrder = await db.query(`select * from "orders" where "pid"=$1;`,[order_id])
+        const getOrder = await db.query(`select o."id" as "orderId", "itemCount", o."pid" as "orderPid", "total", o."createdAt"as "orderCreatedAt", "statusId"  from "orders" as o join "guests" as g on o."guestId"=g."id" where o."pid"=$1 and "email"=$2;`,[order_id, email])
 
-        const [{ id, itemCount, pid, total, createdAt, statusId }] = getOrder.rows
+        const [{ orderId, itemCount, orderPid, total, orderCreatedAt, statusId }] = getOrder.rows
 
         //get order items
 
-        const getGuestOrderItems = await db.query(`select oi."pid" as "orderItemPid", quantity, cost, p."name" as "productName", p."pid" as "productPid", "altText", "type", "file" from "orderItems" as oi join "products" as p on oi."productId"=p."id" join "images" as i on i."productId"=p."id" where "orderId"=$1 and "type"=$2;`,[id,'thumbnail'])
+        const getGuestOrderItems = await db.query(`select oi."pid" as "orderItemPid", quantity, cost, p."name" as "productName", p."pid" as "productPid", "altText", "type", "file" from "orderItems" as oi join "products" as p on oi."productId"=p."id" join "images" as i on i."productId"=p."id" where "orderId"=$1 and "type"=$2;`,[orderId,'thumbnail'])
             const getGuestOrderItemsResult = getGuestOrderItems.rows
         const guestOrderItems = getGuestOrderItemsResult.map( items => {
             const  { orderItemPid, quantity, cost, productName, productPid, altText, type, file } = items
@@ -328,19 +325,17 @@ router.get('/guest/:order_id', async (req, res, next) => {
             }
          })
 
-        //console.log("TCL: itemCount, pid, total, createdAt, statusId", itemCount, pid, total, createdAt, statusId)
         res.send({
             "itemCount": itemCount,
             "total": total,
-            "createdAt": createdAt,
-            "id": pid,
+            "createdAt": orderCreatedAt,
+            "id": orderPid,
             "status": "Pending",
             "items": guestOrderItems
         })
-    //}
-        res.status(402).send('guest email invalid.')
 
     }
+
     catch(err){
         next(err)
     }
