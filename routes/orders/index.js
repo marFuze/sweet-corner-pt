@@ -137,11 +137,9 @@ router.post('/', async (req, res, next) => {
         const getCartTotals = await db.query(`select sum(cost) as totalCost, sum(quantity) as totalQuantity from "cartItems" as ci join "products" as p on ci."productId"=p."id" where "cartId"=$1;`,[userCartId])
         const getCartTotalsResult = getCartTotals.rows
         const [{ totalcost, totalquantity}] = getCartTotalsResult
-        //console.log("TCL: totalquantity", totalquantity)
     
         //insert new user order
         const createUserOrder = await db.query(`insert into "orders" ("pid","itemCount", "total", "cartId", "guestId", "statusId","userId") values (uuid_generate_v4(),$1,$2,$3,$4,$5,$6) returning "id","pid";`,[totalquantity, totalcost, userCartId, 1, 1,userId])
-        //console.log("TCL: createGuestOrder", createGuestOrder)
         const [{ id, pid }] = createUserOrder.rows
         const newOrderId = id
         const newOrderPid = pid
@@ -161,8 +159,6 @@ router.post('/', async (req, res, next) => {
             next(err)
         }
      })
-
-    console.log("TCL: newOrderItems", newOrderItems)
 
     res.send({
         "message": "Your order has been placed",
@@ -309,14 +305,9 @@ router.get('/guest/:order_id', async (req, res, next) => {
         })
 
     }
-
     catch(err){
         next(err)
-    }
-
-    
+    }  
 })
-
-
 
 module.exports = router;
